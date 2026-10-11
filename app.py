@@ -1,3 +1,4 @@
+
 import streamlit as st
 
 st.set_page_config(
@@ -60,18 +61,81 @@ if "screen" not in st.session_state:
 if st.session_state.screen == "title":
 
     # Ảnh màn hình chờ đã tải lên cùng app.py
-    st.image("veltarune_title.png", use_container_width=True)
+  
+import streamlit as st
+import streamlit.components.v1 as components
+import base64
+from pathlib import Path
 
-    left, center, right = st.columns([1, 1.2, 1])
+image_path = Path(__file__).parent / "veltarune_title.png"
 
-    with center:
-        if st.button("♥  NEW GAME", use_container_width=True):
-            st.session_state.screen = "new_game"
-            st.rerun()
+if image_path.exists():
+    image_data = base64.b64encode(image_path.read_bytes()).decode()
 
-        if st.button("⚙  SETTINGS", use_container_width=True):
-            st.session_state.screen = "settings"
-            st.rerun()
+    components.html(
+        f"""
+        <div id="game-menu">
+          <img src="data:image/png;base64,{image_data}" />
+
+          <button class="game-button new-game"
+            onclick="window.parent.postMessage(
+              {{type: 'streamlit:setComponentValue',
+               value: 'new_game'}}, '*')">
+            ♥ NEW GAME
+          </button>
+
+          <button class="game-button settings"
+            onclick="window.parent.postMessage(
+              {{type: 'streamlit:setComponentValue',
+               value: 'settings'}}, '*')">
+            ⚙ SETTINGS
+          </button>
+        </div>
+
+        <style>
+          #game-menu {
+            position: relative;
+            width: 100%;
+            line-height: 0;
+          }
+
+          #game-menu img {
+            display: block;
+            width: 100%;
+            height: auto;
+          }
+
+          .game-button {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 24%;
+            height: 7%;
+            background: transparent;
+            color: white;
+            border: none;
+            font-family: monospace;
+            font-size: clamp(10px, 1.5vw, 20px);
+            font-weight: bold;
+            cursor: pointer;
+            line-height: normal;
+          }
+
+          .game-button:hover {
+            color: #ff3333;
+            background: rgba(255,255,255,0.08);
+          }
+
+          .new-game { top: 43%; }
+          .settings { top: 51%; }
+        </style>
+        """,
+        height=650,
+        scrolling=False,
+    )
+else:
+    st.error("Không tìm thấy file veltarune_title.png")
+
 
 elif st.session_state.screen == "new_game":
     st.title("NEW GAME")
