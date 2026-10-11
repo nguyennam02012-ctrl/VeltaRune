@@ -41,7 +41,7 @@ if st.session_state.screen == "title":
     image_path = Path(__file__).parent / "VeltaRune_ New Game at Dusk.png"
 
     if image_path.exists():
-        st.image(str(image_path), use_container_width=True)
+        st.image:veltarune_title.png, use_container_width=True)
     else:
         st.title("VeltaRune")
         st.warning("Hãy kiểm tra lại tên file ảnh trong GitHub.")
