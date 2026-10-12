@@ -53,14 +53,14 @@ function box(x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(Math.round(x),Math.round(y)
 function drawFloor(x,y,sx,sy){box(sx,sy,tile,tile,'#29233b');box(sx+2,sy+2,tile-4,tile-4,'#322a46');if((x*7+y*11)%9===0)box(sx+8,sy+18,3,3,'#4a3c59');if((x+y*3)%17===0){box(sx+6,sy+7,3,3,'#55425f');box(sx+22,sy+23,2,2,'#49384f')}}
 function drawWall(x,y,sx,sy){box(sx,sy,tile,tile,'#171322');box(sx+2,sy+2,tile-4,tile-4,'#494052');box(sx+3,sy+3,tile-6,4,'#67586c');box(sx+4,sy+9,tile-8,2,'#30283d');box(sx+5,sy+14,3,3,'#74617a');box(sx+tile-8,sy+20,4,3,'#282235');if((x*13+y*7)%23===0){box(sx+6,sy+tile-5,5,3,'#5f9d83');box(sx+10,sy+tile-8,3,4,'#70bd91')}}
 function flower(sx,sy){ctx.save();ctx.translate(sx+16,sy+16);ctx.fillStyle='#ff6cae';for(let i=0;i<5;i++){ctx.beginPath();ctx.ellipse(0,-6,4,6,i*Math.PI*2/5,0,Math.PI*2);ctx.fill()}ctx.fillStyle='#ffe6a1';ctx.fillRect(-2,-2,4,4);ctx.restore();box(sx+13,sy+23,6,3,'#4e9c68')}
-function person(sx,sy){let bob=Math.sin(player.walk)*2;sy+=bob; // shadow
+function person(sx,sy){ctx.save();ctx.translate(sx+16,sy+16);ctx.scale(1.25,1.25);ctx.translate(-(sx+16),-(sy+16));let bob=Math.sin(player.walk)*2;sy+=bob; // shadow
 box(sx+5,sy+25,22,5,'#171321');
 // legs
 box(sx+9,sy+20,5,8,'#29244e');box(sx+18,sy+20,5,8,'#29244e');if(Math.sin(player.walk)>0){box(sx+7,sy+26,7,3,'#e9d7c8');box(sx+18,sy+26,7,3,'#e9d7c8')}else{box(sx+9,sy+26,7,3,'#e9d7c8');box(sx+20,sy+26,6,3,'#e9d7c8')}
 // shirt with Vietnam star
 box(sx+7,sy+9,18,13,'#8d2447');box(sx+4,sy+10,5,11,'#d9a17c');box(sx+23,sy+10,5,11,'#d9a17c');box(sx+10,sy+12,12,8,'#d82d3f');ctx.fillStyle='#ffe36a';ctx.beginPath();ctx.moveTo(sx+16,sy+12);ctx.lineTo(sx+17.5,sy+15);ctx.lineTo(sx+21,sy+15);ctx.lineTo(sx+18.2,sy+17);ctx.lineTo(sx+19.2,sy+20);ctx.lineTo(sx+16,sy+18);ctx.lineTo(sx+13,sy+20);ctx.lineTo(sx+14,sy+17);ctx.lineTo(sx+11,sy+15);ctx.lineTo(sx+14.5,sy+15);ctx.closePath();ctx.fill();
 // head + hair
-box(sx+9,sy+1,14,10,'#e8b58d');box(sx+8,sy,16,5,'#34233a');box(sx+7,sy+3,4,6,'#34233a');box(sx+21,sy+3,4,6,'#34233a');if(player.face!=='up'){box(sx+12,sy+5,2,2,'#20152a');box(sx+19,sy+5,2,2,'#20152a')}}
+box(sx+9,sy+1,14,10,'#e8b58d');box(sx+8,sy,16,5,'#34233a');box(sx+7,sy+3,4,6,'#34233a');box(sx+21,sy+3,4,6,'#34233a');if(player.face!=='up'){box(sx+12,sy+5,2,2,'#20152a');box(sx+19,sy+5,2,2,'#20152a')}ctx.restore()}
 function monster(sx,sy){box(sx+5,sy+26,24,4,'#171321');ctx.fillStyle='#f08bb8';for(let i=0;i<6;i++){ctx.beginPath();ctx.ellipse(sx+17+Math.cos(i*Math.PI/3)*9,sy+12+Math.sin(i*Math.PI/3)*8,6,10,i*Math.PI/3,0,Math.PI*2);ctx.fill()}ctx.fillStyle='#c82e70';ctx.beginPath();ctx.arc(sx+17,sy+15,9,0,Math.PI*2);ctx.fill();box(sx+11,sy+12,4,4,'#fff4fa');box(sx+20,sy+12,4,4,'#fff4fa');box(sx+12,sy+13,2,3,'#302039');box(sx+21,sy+13,2,3,'#302039');box(sx+13,sy+19,9,2,'#7e174a')}
 function chest(sx,sy,open){box(sx+4,sy+11,25,17,'#7b472e');box(sx+4,sy+10,25,6,open?'#b38b58':'#e0a653');box(sx+7,sy+15,19,10,'#a96a39');box(sx+15,sy+16,4,6,'#ffe28a');if(open){box(sx+3,sy+6,27,5,'#c89c63')}}
 function render(){ctx.clearRect(0,0,W,H);let scale=Math.min(W/960,H/600); // fill screen, preserve pixels
