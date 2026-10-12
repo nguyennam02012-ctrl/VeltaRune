@@ -23,12 +23,6 @@ canvas{display:block;width:100%;height:100%;image-rendering:pixelated;outline:no
 #start p{line-height:1.7;color:#ddd5ee}
 button{font: bold 16px monospace;padding:13px 28px;background:#ffb6d4;color:#1b1020;border:0;cursor:pointer;margin-top:12px}button:hover{background:#fff}
 #resize{position:absolute;bottom:10px;right:14px;color:#b8abc9;font-size:11px;pointer-events:none}
-#credits{display:none;position:absolute;inset:0;z-index:10;background:#05040c;color:#fff;overflow:hidden;text-align:center;font-family:monospace}
-#credits h1{color:#ffe08a;font-size:clamp(32px,6vw,64px);letter-spacing:4px;margin:0 0 34px}
-#creditRoll{position:absolute;left:0;right:0;top:100%;padding:0 20px 30px;animation:rollCredits 28s linear forwards;font-size:clamp(16px,2.2vw,24px);line-height:2.2}
-#creditRoll .gold{color:#ffe08a}#creditRoll .pink{color:#ff9fc9}
-@keyframes rollCredits{from{top:100%}to{top:-180%}}
-#credits button{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);z-index:2}
 #battle{display:none;position:absolute;inset:0;z-index:5;background:#05040cf2;align-items:center;justify-content:center;font-family:monospace}
 #battlePanel{width:min(900px,94vw);color:#fff}
 #battleTop{display:flex;justify-content:space-between;align-items:center;font-size:clamp(16px,2vw,24px);margin-bottom:14px}
@@ -44,19 +38,42 @@ button{font: bold 16px monospace;padding:13px 28px;background:#ffb6d4;color:#1b1
 #battleMenu button:disabled{opacity:.45;cursor:not-allowed;background:#090914!important;color:#8d8498!important;border-color:#8d8498!important}
 .attack{position:absolute;width:13px;height:13px;background:#fff;border-radius:2px;box-shadow:0 0 7px #fff}
 #battleHint{font-size:12px;color:#c8bdd9;margin-top:12px;text-align:center}
+#ending{display:none;position:absolute;inset:0;z-index:20;background:#05040c;color:#fff;overflow:hidden;text-align:center;font-family:monospace}
+#ending .ending-title{position:absolute;top:12%;width:100%;color:#ffe36a;font-size:clamp(34px,7vw,72px);letter-spacing:5px;text-shadow:4px 4px #674b28}
+#ending .ending-subtitle{position:absolute;top:25%;width:100%;color:#ffb6d4;font-size:clamp(14px,2vw,22px)}
+#creditsViewport{position:absolute;inset:42% 0 0;overflow:hidden}
+#creditsRoll{position:absolute;top:100%;width:100%;padding:0 20px 100px;animation:creditsScroll 34s linear forwards;font-size:clamp(16px,2.2vw,24px);line-height:1.9}
+#creditsRoll h2{color:#ffe36a;font-size:1.7em;letter-spacing:4px;margin:0 0 28px}
+#creditsRoll .role{color:#ffb6d4;margin-top:18px;font-weight:bold}
+#creditsRoll .name{color:#fff}
+#creditsRoll .thanks{margin-top:38px;color:#c8bdd9;font-style:italic}
+#creditsRoll .theend{margin-top:32px;color:#ffe36a;font-size:1.5em;letter-spacing:5px}
+#endingReplay{position:absolute;bottom:24px;left:50%;transform:translateX(-50%);display:none;z-index:2}
+@keyframes creditsScroll{from{top:100%}to{top:-145%}}
 </style></head><body><div id="wrap"><canvas id="game" tabindex="0"></canvas>
 <div id="hud">✦ VELTARUNE<br>HANG HOA CỦA ROSER<br><span id="hp">HP ♥♥♥♥♥</span><br><span id="flowers">Hoa hồi máu: 0</span></div>
 <div id="hint">WASD / ↑↓←→ : DI CHUYỂN<br>E : TƯƠNG TÁC<br>ESC : ĐÓNG HỘI THOẠI</div>
 <div id="dialog">Bạn tỉnh dậy trong hang hoa của Roser.<small>Nhấn E để tiếp tục</small></div>
 <div id="battle"><div id="battlePanel"><div id="battleTop"><span>✦ ROSER</span><span id="battleHP">ROSE HP 10000/10000 · PHASE 1/4</span></div><div id="enemyArt">🌸</div><div id="arena"><div id="soul"></div></div><div id="battleText">Roser chặn đường bạn. Cánh hoa bắt đầu xoay...</div><div id="battleMenu"><button data-action="FIGHT">⚔ FIGHT</button><button data-action="ACT">♡ ACT</button><button data-action="ITEM">✿ ITEM</button><button data-action="MERCY">☼ MERCY</button></div><div id="battleHint">WASD / phím mũi tên: di chuyển trái tim · 1–4 chọn hành động · E/Enter xác nhận · Esc rút lui</div></div></div>
 <div id="resize"></div>
-<div id="credits"><div id="creditRoll"><h1>✦ GOOD ENDING ✦</h1><div class="pink">VELTARUNE</div><p>Roser đã tan biến thành những cánh hoa ánh sáng.<br>Hang động không còn đáng sợ nữa.</p><p class="gold">Bạn đã chiến thắng.</p><p>— CREDITS —</p><p>Ý tưởng & phát triển<br><span class="gold">Bạn và người đồng hành AI</span></p><p>Nhân vật cuối cùng<br><span class="pink">ROSER · Người canh giữ vườn hoa</span></p><p>Âm nhạc<br>006 · Uwa!! So Temperate<br>Finale</p><p>Cảm ơn bạn đã chơi</p><h1 class="gold">THE END</h1></div><button id="creditsClose">TIẾP TỤC</button></div>
+<div id="ending" aria-live="polite"><div class="ending-title">GOOD ENDING</div><div class="ending-subtitle">ROser đã được đánh bại · VeltaRune</div><div id="creditsViewport"><div id="creditsRoll">
+<h2>✦ VELTARUNE ✦</h2>
+<div class="role">CODER</div><div class="name">Hải Nam</div>
+<div class="role">MUSIC</div><div class="name">Hải Nam</div>
+<div class="role">DEVELOPER</div><div class="name">Hải Nam</div>
+<div class="role">STORY</div><div class="name">Tấn Sang, Hải Nam</div>
+<div class="role">ARTIST · NGƯỜI VẼ</div><div class="name">Phúc Thịnh</div>
+<div class="role">ORIGINAL SOUNDTRACK</div><div class="name">Toby Fox</div>
+<div class="role">SPECIAL THANKS</div><div class="name">ChatGPT (ChatLGBTYUKGHOIRTHTRH)</div>
+<div class="thanks">Thank you for playing VeltaRune.</div>
+<div class="thanks">Every journey has an ending…</div>
+<div class="thanks">But some stories live on forever.</div>
+<div class="theend">THE END</div>
+</div></div><button id="endingReplay">CHƠI LẠI</button></div>
 <div id="start"><div class="card"><h1>✦ VeltaRune ✦</h1><p>HANG HOA CỦA ROSER<br>Một lối đi đang chờ bạn trong bóng tối.<br><br><b>WASD / phím mũi tên</b> để di chuyển · <b>E</b> để tương tác</p><button id="play">BẮT ĐẦU KHÁM PHÁ</button></div></div>
 </div><script>
 (()=>{
 const canvas=document.getElementById('game'),ctx=canvas.getContext('2d');ctx.imageSmoothingEnabled=false;
-const mapMusic=new Audio('__MAP_MUSIC__'),bossMusic=new Audio('__BOSS_MUSIC__');mapMusic.loop=true;bossMusic.loop=true;mapMusic.volume=.45;bossMusic.volume=.55;let endingShown=false;
-function playMusic(which){const stop=which===mapMusic?bossMusic:mapMusic;stop.pause();stop.currentTime=0;which.currentTime=0;which.play().catch(()=>{});}
 let W=960,H=600,keys={},started=false,dialogOpen=false,dialogIndex=0,flowers=0,hp=5,exitReached=false,battle=false,enemyHP=10000,attackTimer=0,fightCooldown=0,selectedAction=0,attackPhase=false,projectiles=[],battlePhase=1,phaseClock=0,turnCount=0,invuln=0,battleMessage='Roser chặn đường bạn. Cánh hoa bắt đầu xoay...';
 const tile=32, cols=72, rows=48, worldW=cols*tile,worldH=rows*tile;
 let map=Array.from({length:rows},()=>Array(cols).fill(1));
@@ -108,14 +125,15 @@ ctx.restore();let grad=ctx.createRadialGradient(W/2,H/2,Math.min(W,H)*.15,W/2,H/
 const dialog=document.getElementById('dialog');const lines=[];function say(text){dialog.innerHTML=text+'<small>Nhấn E để tiếp tục</small>';dialog.style.display='block';dialogOpen=true}
 function interact(){if(battle){battleAction();return}if(dialogOpen){dialog.style.display='none';dialogOpen=false;return}let tx=Math.round(player.x/tile),ty=Math.round(player.y/tile);let near=(x,y)=>Math.hypot(tx-x,ty-y)<2.2;let f=flowersPos.find(f=>!f.got&&near(f.x,f.y));if(f){f.got=true;flowers++;hp=Math.min(5,hp+1);say('Bạn hái được một <span style="color:#ff8fc0">bông hoa hồi máu</span>. Cánh hoa ấm lên trong tay bạn.');return}let c=chests.find(c=>!c.open&&near(c.x,c.y));if(c){c.open=true;say('Trong rương có một <span style="color:#ffe08a">Cổ Ấn Velta</span>. Nó khẽ phát sáng...');return}if(near(roser.x,roser.y)){startBattle();return}if(near(exit.x,exit.y)){say('Cánh cửa đá rung lên. Cổ Ấn Velta có thể mở nó...');return}say('Hang động im lặng. Những cánh hoa phát sáng mờ mờ trong bóng tối.')}
 function keydown(e){let k=e.key.toLowerCase();if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k))e.preventDefault();keys[k]=true;if(battle){if(['1','2','3','4'].includes(k)){selectedAction=Number(k)-1;highlightAction()}if((k==='e'||k==='enter'||k==='z')&&!e.repeat)battleAction();if(k==='escape'&&!e.repeat){endBattle('Bạn lùi lại khỏi trận chiến. Roser vẫn dõi theo bạn...')}return}if(k==='e'&&started)interact();if(k==='escape'&&dialogOpen){dialogOpen=false;dialog.style.display='none'}}function keyup(e){keys[e.key.toLowerCase()]=false}window.addEventListener('keydown',keydown);window.addEventListener('keyup',keyup);window.addEventListener('blur',()=>keys={});
-document.getElementById('play').onclick=()=>{started=true;document.getElementById('start').style.display='none';playMusic(mapMusic);canvas.focus()};
-document.getElementById('creditsClose').onclick=()=>{document.getElementById('credits').style.display='none';document.getElementById('start').style.display='flex';document.querySelector('#start h1').textContent='✦ VeltaRune ✦';document.querySelector('#start p').innerHTML='GOOD ENDING ĐÃ MỞ KHÓA<br>Roser đã được giải thoát.';document.getElementById('play').textContent='CHƠI LẠI';endingShown=false;};
-function startBattle(){playMusic(bossMusic);battle=true;fightCooldown=0;document.querySelector('#battleMenu button[data-action="FIGHT"]').textContent='⚔ FIGHT';enemyHP=10000;battlePhase=1;phaseClock=0;turnCount=0;invuln=0;attackTimer=0;projectiles=[];attackPhase=false;document.getElementById('battle').style.display='flex';document.getElementById('battleText').textContent='ROSE: “10.000 HP. Không có đường lui đâu.” Né đòn địa ngục bắt đầu!';document.getElementById('soul').style.left='50%';document.getElementById('soul').style.top='70%';highlightAction()}
-function endBattle(message){battle=false;document.getElementById('battle').style.display='none';projectiles=[];bossMusic.pause();bossMusic.currentTime=0;if(enemyHP===0){mapMusic.pause();mapMusic.currentTime=0;document.getElementById('dialog').style.display='none';dialogOpen=false;document.getElementById('credits').style.display='block';endingShown=true;return}if(started)playMusic(mapMusic);if(message)say(message)}
+document.getElementById('play').onclick=()=>{started=true;document.getElementById('start').style.display='none';canvas.focus()};
+function startBattle(){battle=true;fightCooldown=0;document.querySelector('#battleMenu button[data-action="FIGHT"]').textContent='⚔ FIGHT';enemyHP=10000;battlePhase=1;phaseClock=0;turnCount=0;invuln=0;attackTimer=0;projectiles=[];attackPhase=false;document.getElementById('battle').style.display='flex';document.getElementById('battleText').textContent='ROSE: “10.000 HP. Không có đường lui đâu.” Né đòn địa ngục bắt đầu!';document.getElementById('soul').style.left='50%';document.getElementById('soul').style.top='70%';highlightAction()}
+function endBattle(message){battle=false;document.getElementById('battle').style.display='none';projectiles=[];if(enemyHP<=0){showGoodEnding();return}if(message)say(message)}
+function showGoodEnding(){dialogOpen=false;dialog.style.display='none';document.getElementById('ending').style.display='block';const roll=document.getElementById('creditsRoll'),replay=document.getElementById('endingReplay');roll.style.animation='none';void roll.offsetHeight;roll.style.animation='creditsScroll 34s linear forwards';replay.style.display='none';roll.onanimationend=()=>{replay.style.display='block'};}
+document.getElementById('endingReplay').onclick=()=>location.reload();
 function highlightAction(){document.querySelectorAll('#battleMenu button').forEach((b,i)=>{b.style.background=i===selectedAction?'#ffb34e':'#090914';b.style.color=i===selectedAction?'#090914':'#ffb34e'})}
 function updateBossBar(){document.getElementById('battleHP').textContent='ROSE HP '+enemyHP.toLocaleString('en-US')+'/10,000 · PHASE '+battlePhase+'/4'}
 function phaseCheck(){let next=enemyHP<=7500?4:enemyHP<=5000?3:enemyHP<=2500?2:1;if(next!==battlePhase){battlePhase=next;projectiles.forEach(p=>p.el.remove());projectiles=[];phaseClock=0;document.getElementById('battleText').textContent=['','', 'PHASE 2 — THORN RAIN! Đạn nhanh hơn, né ngay!','PHASE 3 — ROSE CYCLONE! Đạn dồn dập từ nhiều hướng!','FINAL PHASE — HEARTBREAK INFERNO! CỰC TỐC. KHÔNG ĐƯỢC ĐỨNG YÊN!'][battlePhase];document.getElementById('enemyArt').textContent=['🌹','🌹','🥀','🌹','🌺'][battlePhase]||'🌹'}}
-function battleAction(){if(!battle)return;let action=['FIGHT','ACT','ITEM','MERCY'][selectedAction];if(action==='FIGHT'){if(fightCooldown>0)return;fightCooldown=2;let fightBtn=document.querySelector('#battleMenu button[data-action="FIGHT"]');fightBtn.disabled=true;fightBtn.textContent='⚔ FIGHT (2.0s)';let damage=250+Math.floor(Math.random()*151);enemyHP=Math.max(0,enemyHP-damage);turnCount++;document.getElementById('battleText').textContent='Đòn đánh gây '+damage+' sát thương! Roser vẫn đứng vững...';updateBossBar();phaseCheck();if(enemyHP===0){endBattle('');return}}else if(action==='ACT'){document.getElementById('battleText').textContent='Bạn đọc nhịp chuyển động của Roser. Tốc độ đạn giảm nhẹ trong 2 giây — tận dụng đi!';attackTimer=-1.2}else if(action==='ITEM'){if(flowers>0&&hp<5){flowers--;hp=Math.min(5,hp+2);document.getElementById('battleText').textContent='Bạn dùng hoa hồi máu: +2 HP. Đừng đứng yên!'}else document.getElementById('battleText').textContent='Không có hoa hồi máu! Bạn phải né bằng kỹ năng.'}else{document.getElementById('battleText').textContent='Roser chưa chịu tha. Hãy sống sót và tiếp tục chiến đấu!';attackPhase=true}attackPhase=true;attackTimer=0;projectiles=[]}
+function battleAction(){if(!battle)return;let action=['FIGHT','ACT','ITEM','MERCY'][selectedAction];if(action==='FIGHT'){if(fightCooldown>0)return;fightCooldown=2;let fightBtn=document.querySelector('#battleMenu button[data-action="FIGHT"]');fightBtn.disabled=true;fightBtn.textContent='⚔ FIGHT (2.0s)';let damage=250+Math.floor(Math.random()*151);enemyHP=Math.max(0,enemyHP-damage);turnCount++;document.getElementById('battleText').textContent='Đòn đánh gây '+damage+' sát thương! Roser vẫn đứng vững...';updateBossBar();phaseCheck();if(enemyHP===0){endBattle('ROSE gục xuống giữa cơn bão cánh hoa. Bạn đã sống sót qua 4 phase địa ngục!');return}}else if(action==='ACT'){document.getElementById('battleText').textContent='Bạn đọc nhịp chuyển động của Roser. Tốc độ đạn giảm nhẹ trong 2 giây — tận dụng đi!';attackTimer=-1.2}else if(action==='ITEM'){if(flowers>0&&hp<5){flowers--;hp=Math.min(5,hp+2);document.getElementById('battleText').textContent='Bạn dùng hoa hồi máu: +2 HP. Đừng đứng yên!'}else document.getElementById('battleText').textContent='Không có hoa hồi máu! Bạn phải né bằng kỹ năng.'}else{document.getElementById('battleText').textContent='Roser chưa chịu tha. Hãy sống sót và tiếp tục chiến đấu!';attackPhase=true}attackPhase=true;attackTimer=0;projectiles=[]}
 document.querySelectorAll('#battleMenu button').forEach((b,i)=>b.addEventListener('click',()=>{selectedAction=i;battleAction()}));
 function updateBattle(dt){let soul=document.getElementById('soul'),arena=document.getElementById('arena'),x=parseFloat(soul.style.left)||50,y=parseFloat(soul.style.top)||70;let dx=(keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0),dy=(keys.s||keys.arrowdown?1:0)-(keys.w||keys.arrowup?1:0);if(dx&&dy){dx*=.707;dy*=.707}let r=145*dt;x=Math.max(3,Math.min(97,x+dx*r));y=Math.max(6,Math.min(94,y+dy*r));soul.style.left=x+'%';soul.style.top=y+'%';phaseClock+=dt;invuln=Math.max(0,invuln-dt);if(fightCooldown>0){fightCooldown=Math.max(0,fightCooldown-dt);let fb=document.querySelector('#battleMenu button[data-action="FIGHT"]');fb.textContent=fightCooldown>0?'⚔ FIGHT ('+fightCooldown.toFixed(1)+'s)':'⚔ FIGHT';fb.disabled=fightCooldown>0;}soul.style.opacity=invuln>0&&Math.floor(invuln*18)%2===0?'.25':'1';
 let interval=[.30,.19,.12,.075][battlePhase-1],speed=[340,480,650,820][battlePhase-1],count=[2,3,4,5][battlePhase-1];attackTimer+=dt;if(attackTimer>Math.max(.09,interval)){attackTimer=0;for(let n=0;n<count;n++){let p=document.createElement('div');p.className='attack';p.style.background=battlePhase>=3?'#ff6cae':'#fff';p.style.boxShadow=battlePhase>=3?'0 0 9px #ff267c':'0 0 7px #fff';let px=Math.random()*88+6;let mode=battlePhase===1?'rain':battlePhase===2?'aim':battlePhase===3?'cross':'inferno';if(mode==='aim'){px=Math.max(3,Math.min(97,x+(Math.random()*28-14)))}p.style.left=px+'%';p.style.top=mode==='cross'?(Math.random()*85+5)+'%':'-14px';arena.appendChild(p);projectiles.push({el:p,x:px,y:parseFloat(p.style.top),mode,vx:mode==='cross'?(Math.random()<.5?1:-1)*speed*.85:0,vy:mode==='cross'?(Math.random()*90-45):speed*(battlePhase===4?1.2:1)})}}
@@ -124,11 +142,4 @@ let last=performance.now();function loop(now){let dt=Math.min((now-last)/1000,.0
 })();
 </script></body></html>'''
 
-import base64
-from pathlib import Path
-
-ASSET_DIR = Path(__file__).parent
-map_audio = base64.b64encode((ASSET_DIR / '006. Uwa!! So Temperate♫ (UNDERTALE Soundtrack) - Toby Fox_320k.mp3').read_bytes()).decode('ascii')
-boss_audio = base64.b64encode((ASSET_DIR / 'Finale_320k.mp3').read_bytes()).decode('ascii')
-GAME = GAME.replace('__MAP_MUSIC__', 'data:audio/mpeg;base64,' + map_audio).replace('__BOSS_MUSIC__', 'data:audio/mpeg;base64,' + boss_audio)
 components.html(GAME, height=900, scrolling=False)
