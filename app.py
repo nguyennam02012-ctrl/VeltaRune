@@ -1,176 +1,174 @@
-from pathlib import Path
-import base64
 import streamlit as st
+import random
 
-# VeltaRune — menu game Streamlit
-# Đặt app.py và veltarune_background.png trong cùng thư mục/repository.
+st.set_page_config(page_title="VeltaRune — Hang của Roser", page_icon="🌹", layout="centered")
 
-st.set_page_config(
-    page_title="VeltaRune",
-    page_icon="❤️",
-    layout="wide",
-    initial_sidebar_state="collapsed",
-)
+st.markdown("""
+<style>
+[data-testid="stHeader"],[data-testid="stToolbar"],[data-testid="stSidebar"]{display:none}
+.stApp { background:#07070c; color:#f4f0ff; }
+.block-container { max-width:850px; padding-top:1rem; padding-bottom:2rem; }
+h1,h2,h3,p,label { color:#f4f0ff !important; }
+div.stButton > button {
+  width:100%; min-height:42px; border-radius:0;
+  background:#090910; color:#f7f3ff; border:2px solid #c9c2e8;
+  font-family:monospace; font-weight:bold;
+}
+div.stButton > button:hover { color:#ff8fc5; border-color:#ff8fc5; background:#211020; }
+.cave-frame {
+  border:3px solid #d6d0ee; background:#050509; padding:12px;
+  font-family:monospace; white-space:pre; line-height:1.25;
+  font-size:16px; overflow-x:auto; color:#a8a1c9;
+}
+.story {border:2px solid #c9c2e8; padding:12px; font-family:monospace; background:#08080f;}
+.small {font-size:12px;color:#b9b2d7}
+</style>
+""", unsafe_allow_html=True)
 
-BASE_DIR = Path(__file__).resolve().parent
-BACKGROUND_PATH = BASE_DIR / "veltarune_background.png"
+W, H = 19, 13
+WALL, FLOOR, FLOWER, EXIT, PLAYER, CHEST = "#", ".", "f", "E", "@", "C"
 
-# CSS trang và menu. Không dùng JavaScript.
-st.markdown(
-    """
-    <style>
-    [data-testid="stHeader"], [data-testid="stToolbar"],
-    [data-testid="stDecoration"], [data-testid="stStatusWidget"] {
-        display: none !important;
-    }
-    [data-testid="stSidebar"] {display: none !important;}
-    .stApp {
-        background: #000;
-        color: #fff;
-    }
-    .block-container {
-        max-width: 1000px;
-        padding-top: 1rem;
-        padding-bottom: 1rem;
-    }
-    h1, h2, h3, p, label {
-        color: #fff !important;
-    }
+ROOM = [
+"###################",
+"##....#.......f..E#",
+"##....#...........#",
+"##....####.########",
+"##.................#",
+"####.#######.#######",
+"#....#.....#.......#",
+"#....#..f..#.......#",
+"#.......C..........#",
+"####.##########.####",
+"#..............f...#",
+"#.@...............##",
+"###################",
+]
+# Normalize rows to a consistent width for safe movement/rendering.
+ROOM = [row[:W].ljust(W, "#") for row in ROOM]
+MAP_H, MAP_W = len(ROOM), len(ROOM[0])
 
-    /* Khung chứa ảnh nền và các nút phủ trực tiếp lên ảnh */
-    .st-key-game_menu {
-        position: relative;
-        width: 100%;
-    }
-    .st-key-game_menu [data-testid="stImage"] {
-        width: 100%;
-        margin: 0 !important;
-        line-height: 0;
-    }
-    .st-key-game_menu [data-testid="stImage"] img {
-        display: block;
-        width: 100%;
-        height: auto;
-        image-rendering: pixelated;
-        border: 2px solid #f5f5f5;
-        box-sizing: border-box;
-    }
+def fresh_game():
+    st.session_state.map = [list(r) for r in ROOM]
+    st.session_state.px, st.session_state.py = 2, 11
+    st.session_state.hp = 20
+    st.session_state.flowers = 0
+    st.session_state.chest_open = False
+    st.session_state.message = "Bạn tỉnh dậy trong hang hoa của ROSER. Tìm lối ra ở phía đông!"
+    st.session_state.steps = 0
+    st.session_state.won = False
 
-    /* Streamlit đặt các nút sau ảnh; đưa chúng lên vùng menu ở giữa ảnh */
-    .st-key-game_menu [data-testid="stButton"] {
-        position: absolute;
-        left: 50%;
-        transform: translateX(-50%);
-        width: min(46%, 360px);
-        z-index: 10;
-        margin: 0 !important;
-    }
-    .st-key-game_menu .st-key-new_game {
-        position: absolute;
-        left: 50%;
-        top: 67%;
-        transform: translateX(-50%);
-        width: min(46%, 360px);
-        z-index: 10;
-        margin: 0 !important;
-    }
-    .st-key-game_menu .st-key-settings {
-        position: absolute;
-        left: 50%;
-        top: 78%;
-        transform: translateX(-50%);
-        width: min(46%, 360px);
-        z-index: 10;
-        margin: 0 !important;
-    }
-    .st-key-game_menu [data-testid="stButton"] button {
-        width: 100%;
-        min-height: 44px;
-        background: rgba(0, 0, 0, 0.88) !important;
-        color: white !important;
-        border: 2px solid white !important;
-        border-radius: 0 !important;
-        font-family: monospace !important;
-        font-weight: bold !important;
-        letter-spacing: 1px;
-        box-shadow: 3px 3px 0 #777;
-    }
-    .st-key-game_menu [data-testid="stButton"] button:hover {
-        background: #242038 !important;
-        border-color: #ff4d65 !important;
-        color: #ff4d65 !important;
-    }
-    .st-key-game_menu [data-testid="stButton"] button:focus {
-        box-shadow: 0 0 0 2px #ff4d65 !important;
-    }
+def tile(x, y):
+    if x < 0 or y < 0 or x >= MAP_W or y >= MAP_H:
+        return WALL
+    return st.session_state.map[y][x]
 
-    .game-panel {
-        border: 2px solid white;
-        padding: 1.25rem;
-        margin-top: 1rem;
-        background: #080808;
-        font-family: monospace;
-    }
-    .game-panel p {font-family: monospace;}
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
+def move(dx, dy):
+    if st.session_state.won:
+        return
+    nx, ny = st.session_state.px + dx, st.session_state.py + dy
+    target = tile(nx, ny)
+    if target == WALL:
+        st.session_state.message = "Bạn chạm vào vách đá lạnh. Lối này bị chặn."
+        return
+    st.session_state.steps += 1
+    st.session_state.px, st.session_state.py = nx, ny
+    if target == FLOWER:
+        st.session_state.flowers += 1
+        st.session_state.hp = min(20, st.session_state.hp + 2)
+        st.session_state.map[ny][nx] = FLOOR
+        st.session_state.message = "Bạn nhặt được một cánh hoa hồng lấp lánh. +2 HP!"
+    elif target == CHEST:
+        st.session_state.map[ny][nx] = FLOOR
+        st.session_state.chest_open = True
+        st.session_state.hp = 20
+        st.session_state.message = "Bạn mở chiếc rương cũ và tìm thấy Bánh Mì Việt Nam. HP đã hồi đầy!"
+    elif target == EXIT:
+        st.session_state.won = True
+        st.session_state.message = "Bạn tìm thấy cửa hang! ROSER thì thầm: “Chúng ta sẽ còn gặp lại...”"
+    else:
+        # Gentle cave hazards: occasionally a rose thorn nicks the player.
+        if random.random() < 0.12:
+            st.session_state.hp = max(0, st.session_state.hp - 1)
+            st.session_state.message = "Một chiếc gai nhỏ quẹt qua áo bạn. -1 HP."
+        else:
+            st.session_state.message = random.choice([
+                "Tiếng nước nhỏ giọt vang vọng trong hang...",
+                "Những cánh hoa hồng phát sáng trên vách đá.",
+                "Bạn nghe thấy tiếng ROSER hát rất khẽ ở sâu trong hang.",
+                "Một làn gió mát thổi từ phía lối ra."
+            ])
+    if st.session_state.hp <= 0:
+        st.session_state.message = "Bạn kiệt sức trong hang. Hãy bắt đầu lại."
+        st.session_state.won = False
+        st.session_state.dead = True
 
-st.markdown(
-    "<h1 style='text-align:center;font-family:monospace;letter-spacing:3px;"
-    "text-shadow:3px 3px #555;margin:0.1rem 0 0.7rem;'>✦ VeltaRune ✦</h1>",
-    unsafe_allow_html=True,
-)
+def draw_map():
+    rows = []
+    for y, row in enumerate(st.session_state.map):
+        chars = []
+        for x, cell in enumerate(row):
+            if (x, y) == (st.session_state.px, st.session_state.py):
+                chars.append("🧍")
+            elif cell == WALL:
+                chars.append("🪨")
+            elif cell == FLOWER:
+                chars.append("🌸")
+            elif cell == EXIT:
+                chars.append("🚪")
+            elif cell == CHEST:
+                chars.append("📦")
+            else:
+                chars.append("　")
+        rows.append("".join(chars))
+    return "\n".join(rows)
 
-if not BACKGROUND_PATH.is_file():
-    st.error(
-        "Không tìm thấy ảnh nền `veltarune_background.png`. "
-        "Hãy tải ảnh này lên GitHub, đặt cùng thư mục với `app.py`."
-    )
-    st.stop()
+if "map" not in st.session_state:
+    fresh_game()
+    st.session_state.dead = False
 
-# Ảnh nền và nút được đặt trong cùng container để CSS phủ nút lên ảnh.
-with st.container(key="game_menu"):
-    st.image(str(BACKGROUND_PATH), use_container_width=True)
-    # Hai nút này được phủ lên ảnh bằng CSS phía trên.
-    new_game = st.button("♥  NEW GAME", key="new_game", use_container_width=True)
-    settings = st.button("⚙  SETTINGS", key="settings", use_container_width=True)
+st.markdown("<h1 style='text-align:center;font-family:monospace'>✦ VeltaRune ✦</h1>", unsafe_allow_html=True)
+st.markdown("<p style='text-align:center;color:#ff9dc9!important;font-family:monospace'>HANG HOA CỦA ROSER</p>", unsafe_allow_html=True)
 
-if new_game:
-    st.session_state["screen"] = "game"
-if settings:
-    st.session_state["screen"] = "settings"
+if st.session_state.won:
+    st.success("BẠN ĐÃ THOÁT KHỎI HANG ROSER!")
+elif st.session_state.get("dead", False):
+    st.error("GAME OVER — bạn đã hết HP.")
 
-screen = st.session_state.get("screen", "menu")
+left, right = st.columns([2, 1])
+with left:
+    st.markdown('<div class="story">MỤC TIÊU: khám phá hang, nhặt hoa hồi máu và tìm cửa ra 🚪</div>', unsafe_allow_html=True)
+    st.markdown('<div class="small">Điều khiển bằng các nút mũi tên bên dưới bản đồ. 🪨 = đá, 🌸 = hoa, 📦 = rương, 🚪 = lối ra.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="cave-frame">' + draw_map() + '</div>', unsafe_allow_html=True)
+with right:
+    st.markdown("### NHÂN VẬT")
+    st.write("🧍 **Bạn**")
+    st.write(f"HP: **{st.session_state.hp}/20**")
+    st.progress(st.session_state.hp / 20)
+    st.write(f"🌸 Hoa đã nhặt: **{st.session_state.flowers}**")
+    st.write(f"👣 Bước đi: **{st.session_state.steps}**")
+    st.markdown("---")
+    st.markdown("### ROSER")
+    st.markdown('<div style="text-align:center;font-size:30px;color:#ff8fc5">✿ ❀ 🌹 ❀ ✿</div>', unsafe_allow_html=True)
+    st.caption("Cánh hoa hồng lấp lánh trong bóng tối...")
 
-if screen == "game":
-    st.markdown(
-        """
-        <div class="game-panel">
-        <h2>♥ VELTARUNE</h2>
-        <p>Chuyến hành trình của bạn bắt đầu...</p>
-        <p>Màn chơi hiện đang là bản khởi đầu. Bạn có thể thêm cốt truyện,
-        nhân vật và hệ thống chiến đấu vào phần này.</p>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-    if st.button("← BACK TO MENU", key="back_game"):
-        st.session_state["screen"] = "menu"
-        st.rerun()
+st.markdown("### DI CHUYỂN")
+up1, up2, up3 = st.columns([1,1,1])
+with up2:
+    if st.button("⬆ ĐI LÊN", disabled=st.session_state.won or st.session_state.get("dead", False)):
+        move(0,-1); st.rerun()
+l1, l2, l3 = st.columns([1,1,1])
+with l1:
+    if st.button("⬅ SANG TRÁI", disabled=st.session_state.won or st.session_state.get("dead", False)):
+        move(-1,0); st.rerun()
+with l2:
+    if st.button("⬇ ĐI XUỐNG", disabled=st.session_state.won or st.session_state.get("dead", False)):
+        move(0,1); st.rerun()
+with l3:
+    if st.button("SANG PHẢI ➡", disabled=st.session_state.won or st.session_state.get("dead", False)):
+        move(1,0); st.rerun()
 
-elif screen == "settings":
-    st.markdown('<div class="game-panel">', unsafe_allow_html=True)
-    st.subheader("⚙ SETTINGS")
-    st.write("Tùy chỉnh trải nghiệm chơi.")
-    st.session_state["music_enabled"] = st.checkbox(
-        "Bật nhạc nền", value=st.session_state.get("music_enabled", True)
-    )
-    st.session_state["fullscreen_hint"] = st.checkbox(
-        "Hiệu ứng pixel", value=st.session_state.get("fullscreen_hint", True)
-    )
-    st.markdown("</div>", unsafe_allow_html=True)
-    if st.button("← BACK TO MENU", key="back_settings"):
-        st.session_state["screen"] = "menu"
-        st.rerun()
+st.markdown('<div class="story">✦ ' + st.session_state.message + '</div>', unsafe_allow_html=True)
+if st.button("↻ CHƠI LẠI TỪ ĐẦU"):
+    fresh_game()
+    st.session_state.dead = False
+    st.rerun()
