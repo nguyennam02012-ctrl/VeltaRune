@@ -38,12 +38,25 @@ button{font: bold 16px monospace;padding:13px 28px;background:#ffb6d4;color:#1b1
 #battleMenu button:disabled{opacity:.45;cursor:not-allowed;background:#090914!important;color:#8d8498!important;border-color:#8d8498!important}
 .attack{position:absolute;width:13px;height:13px;background:#fff;border-radius:2px;box-shadow:0 0 7px #fff}
 #battleHint{font-size:12px;color:#c8bdd9;margin-top:12px;text-align:center}
+#mobileControls{display:none;position:absolute;inset:auto 12px 14px 12px;z-index:12;pointer-events:none;justify-content:space-between;align-items:end;touch-action:none;user-select:none;-webkit-user-select:none}
+#mobileControls .cluster{pointer-events:auto;display:grid;gap:7px;touch-action:none}
+#mobileControls .dpad{grid-template-columns:repeat(3,52px);grid-template-rows:repeat(2,48px)}
+#mobileControls .actions{grid-template-columns:repeat(2,minmax(64px,78px));}
+#mobileControls button{margin:0;padding:0;min-height:46px;border:2px solid #ffe6a3;border-radius:12px;background:#171126eF;color:#fff;font:bold 15px monospace;box-shadow:0 3px 0 #684b86;touch-action:none;user-select:none;-webkit-user-select:none}
+#mobileControls button:active{transform:translateY(2px);background:#55356e}
+@media (pointer:coarse),(max-width:800px){#mobileControls{display:flex}#hint{top:10px;right:10px;font-size:11px;max-width:145px}#dialog{bottom:155px;font-size:15px;padding:12px}#battleHint{font-size:10px}}
 </style></head><body><div id="wrap"><canvas id="game" tabindex="0"></canvas>
 <div id="hud">✦ VELTARUNE<br>HANG HOA CỦA ROSER<br><span id="hp">HP ♥♥♥♥♥</span><br><span id="flowers">Hoa hồi máu: 0</span></div>
 <div id="hint">WASD / ↑↓←→ : DI CHUYỂN<br>E : TƯƠNG TÁC<br>ESC : ĐÓNG HỘI THOẠI</div>
 <div id="dialog">Bạn tỉnh dậy trong hang hoa của Roser.<small>Nhấn E để tiếp tục</small></div>
 <div id="battle"><div id="battlePanel"><div id="battleTop"><span>✦ ROSER</span><span id="battleHP">ROSE HP 10000/10000 · PHASE 1/4</span></div><div id="enemyArt">🌸</div><div id="arena"><div id="soul"></div></div><div id="battleText">Roser chặn đường bạn. Cánh hoa bắt đầu xoay...</div><div id="battleMenu"><button data-action="FIGHT">⚔ FIGHT</button><button data-action="ACT">♡ ACT</button><button data-action="ITEM">✿ ITEM</button><button data-action="MERCY">☼ MERCY</button></div><div id="battleHint">WASD / phím mũi tên: di chuyển trái tim · 1–4 chọn hành động · E/Enter xác nhận · Esc rút lui</div></div></div>
-<div id="ending"><div><h1>✦ GOOD ENDING ✦</h1><div id="creditsRoll"><div id="creditsText"><h2>VELTARUNE</h2><p>Coder: Hải Nam</p><p>Music: Hải Nam</p><p>Developer: Hải Nam</p><p>Story: Tấn Sang, Hải Nam</p><p>Artist: Phúc Thịnh</p><p>Original Soundtrack: Toby Fox</p><p>Special Thanks: ChatGPT (ChatLGBTYUKGHOIRTHTRH)</p><p>Thank you for playing VeltaRune.</p><p>Every journey has an ending…</p><p>But some stories live on forever.</p><h2>THE END</h2></div></div><button id="replay" style="display:none">CHƠI LẠI</button></div></div><div id="resize"></div>
+<div id="ending"><div><h1>✦ GOOD ENDING ✦</h1><div id="creditsRoll"><div id="creditsText"><h2>VELTARUNE</h2><p>Coder: Hải Nam</p><p>Music: Hải Nam</p><p>Developer: Hải Nam</p><p>Story: Tấn Sang, Hải Nam</p><p>Artist: Phúc Thịnh</p><p>Original Soundtrack: Toby Fox</p><p>Tester: Minh Alpha</p><p>Tester: Anh Danh Đại Đế Vạn Tuế Đẹp Trai</p><p>Special Thanks: ChatGPT (ChatLGBTYUKGHOIRTHTRH)</p><p>Thank you for playing VeltaRune.</p><p>Every journey has an ending…</p><p>But some stories live on forever.</p><h2>THE END</h2></div></div><button id="replay" style="display:none">CHƠI LẠI</button></div></div><div id="mobileControls" aria-label="Điều khiển điện thoại">
+ <div class="cluster dpad">
+  <span></span><button data-key="arrowup" aria-label="Đi lên">▲</button><span></span>
+  <button data-key="arrowleft" aria-label="Sang trái">◀</button><button data-key="arrowdown" aria-label="Đi xuống">▼</button><button data-key="arrowright" aria-label="Sang phải">▶</button>
+ </div>
+ <div class="cluster actions"><button id="mobileInteract">E · TƯƠNG TÁC</button><button id="mobileConfirm">OK · CHỌN</button></div>
+</div><div id="resize"></div>
 <div id="start"><div class="card"><h1>✦ VeltaRune ✦</h1><p>HANG HOA CỦA ROSER<br>Một lối đi đang chờ bạn trong bóng tối.<br><br><b>WASD / phím mũi tên</b> để di chuyển · <b>E</b> để tương tác</p><button id="play">BẮT ĐẦU KHÁM PHÁ</button></div></div>
 </div><script>
 (()=>{
@@ -102,6 +115,15 @@ ctx.restore();let grad=ctx.createRadialGradient(W/2,H/2,Math.min(W,H)*.15,W/2,H/
 }
 const dialog=document.getElementById('dialog');const lines=[];function say(text){dialog.innerHTML=text+'<small>Nhấn E để tiếp tục</small>';dialog.style.display='block';dialogOpen=true}
 function interact(){if(battle){battleAction();return}if(dialogOpen){dialog.style.display='none';dialogOpen=false;return}let tx=Math.round(player.x/tile),ty=Math.round(player.y/tile);let near=(x,y)=>Math.hypot(tx-x,ty-y)<2.2;let f=flowersPos.find(f=>!f.got&&near(f.x,f.y));if(f){f.got=true;flowers++;hp=Math.min(5,hp+1);say('Bạn hái được một <span style="color:#ff8fc0">bông hoa hồi máu</span>. Cánh hoa ấm lên trong tay bạn.');return}let c=chests.find(c=>!c.open&&near(c.x,c.y));if(c){c.open=true;say('Trong rương có một <span style="color:#ffe08a">Cổ Ấn Velta</span>. Nó khẽ phát sáng...');return}if(near(roser.x,roser.y)){startBattle();return}if(near(exit.x,exit.y)){say('Cánh cửa đá rung lên. Cổ Ấn Velta có thể mở nó...');return}say('Hang động im lặng. Những cánh hoa phát sáng mờ mờ trong bóng tối.')}
+// Mobile touch controls: hold direction buttons to move; action buttons interact/confirm.
+document.querySelectorAll('#mobileControls [data-key]').forEach(btn=>{
+ const k=btn.dataset.key;
+ const down=e=>{e.preventDefault();keys[k]=true;try{btn.setPointerCapture(e.pointerId)}catch(_){}};
+ const up=e=>{e.preventDefault();keys[k]=false};
+ btn.addEventListener('pointerdown',down);btn.addEventListener('pointerup',up);btn.addEventListener('pointercancel',up);btn.addEventListener('lostpointercapture',up);
+});
+document.getElementById('mobileInteract').addEventListener('pointerdown',e=>{e.preventDefault();if(started)interact();else document.getElementById('play').click()});
+document.getElementById('mobileConfirm').addEventListener('pointerdown',e=>{e.preventDefault();if(battle)battleAction();else if(dialogOpen)interact();else if(!started)document.getElementById('play').click();else interact()});
 function keydown(e){let k=e.key.toLowerCase();if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k))e.preventDefault();keys[k]=true;if(battle){if(['1','2','3','4'].includes(k)){selectedAction=Number(k)-1;highlightAction()}if((k==='e'||k==='enter'||k==='z')&&!e.repeat)battleAction();if(k==='escape'&&!e.repeat){endBattle('Bạn lùi lại khỏi trận chiến. Roser vẫn dõi theo bạn...')}return}if(k==='e'&&started)interact();if(k==='escape'&&dialogOpen){dialogOpen=false;dialog.style.display='none'}}function keyup(e){keys[e.key.toLowerCase()]=false}window.addEventListener('keydown',keydown);window.addEventListener('keyup',keyup);window.addEventListener('blur',()=>keys={});
 document.getElementById('play').onclick=()=>{started=true;document.getElementById('start').style.display='none';playMusic('map');canvas.focus()};
 function startBattle(){playMusic('boss');battle=true;fightCooldown=0;document.querySelector('#battleMenu button[data-action="FIGHT"]').textContent='⚔ FIGHT';enemyHP=10000;battlePhase=1;phaseClock=0;turnCount=0;invuln=0;attackTimer=0;projectiles=[];attackPhase=false;document.getElementById('battle').style.display='flex';document.getElementById('battleText').textContent='ROSE: “10.000 HP. Không có đường lui đâu.” Né đòn địa ngục bắt đầu!';document.getElementById('soul').style.left='50%';document.getElementById('soul').style.top='70%';highlightAction()}
