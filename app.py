@@ -180,11 +180,73 @@ function updateBossBar(){let n=battleType==='roser'?'ROSER':battleType==='leitor
 function phaseCheck(){let next=enemyHP<=2500?4:enemyHP<=5000?3:enemyHP<=7500?2:1;if(next!==battlePhase){battlePhase=next;projectiles.forEach(p=>p.el.remove());projectiles=[];phaseClock=0;document.getElementById('battleText').textContent=['','', 'PHASE 2 — THORN RAIN! Đạn nhanh hơn, né ngay!','PHASE 3 — ROSE CYCLONE! Đạn dồn dập từ nhiều hướng!','FINAL PHASE — HEARTBREAK INFERNO! CỰC TỐC. KHÔNG ĐƯỢC ĐỨNG YÊN!'][battlePhase];document.getElementById('enemyArt').textContent=['🌹','🌹','🥀','🌹','🌺'][battlePhase]||'🌹'}}
 function battleAction(){if(!battle)return;let action=['FIGHT','ACT','ITEM','MERCY'][selectedAction];if(action==='FIGHT'){if(fightCooldown>0)return;fightCooldown=2;let fightBtn=document.querySelector('#battleMenu button[data-action="FIGHT"]');fightBtn.disabled=true;fightBtn.textContent='⚔ FIGHT (2.0s)';let damage=650+Math.floor(Math.random()*251);enemyHP=Math.max(0,enemyHP-damage);turnCount++;let bossName=battleType==='roser'?'Roser':battleType==='leitor'?'Leitor':'Shiki';document.getElementById('battleText').textContent='Đòn đánh gây '+damage+' sát thương! '+bossName+' vẫn đứng vững...';updateBossBar();phaseCheck();if((battleType==='roser'&&enemyHP===0)||(battleType==='leitor'&&enemyHP<=5000)||(battleType==='shiki'&&enemyHP<=4000)){endBattle('');return}}else if(action==='ACT'){document.getElementById('battleText').textContent='Bạn đọc nhịp chuyển động của Roser. Tốc độ đạn giảm nhẹ trong 2 giây — tận dụng đi!';attackTimer=-1.2}else if(action==='ITEM'){if(flowers>0&&hp<5){flowers--;hp=Math.min(5,hp+2);document.getElementById('battleText').textContent='Bạn dùng hoa hồi máu: +2 HP. Đừng đứng yên!'}else document.getElementById('battleText').textContent='Không có hoa hồi máu! Bạn phải né bằng kỹ năng.'}else{document.getElementById('battleText').textContent='Roser chưa chịu tha. Hãy sống sót và tiếp tục chiến đấu!';attackPhase=true}attackPhase=true;attackTimer=0;projectiles=[]}
 document.querySelectorAll('#battleMenu button').forEach((b,i)=>b.addEventListener('click',()=>{selectedAction=i;battleAction()}));
-function updateBattle(dt){let soul=document.getElementById('soul'),arena=document.getElementById('arena'),x=parseFloat(soul.style.left)||50,y=parseFloat(soul.style.top)||70;let dx=(keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0),dy=(keys.s||keys.arrowdown?1:0)-(keys.w||keys.arrowup?1:0);if(dx&&dy){dx*=.707;dy*=.707}let r=145*dt;x=Math.max(3,Math.min(97,x+dx*r));y=Math.max(6,Math.min(94,y+dy*r));soul.style.left=x+'%';soul.style.top=y+'%';phaseClock+=dt;invuln=Math.max(0,invuln-dt);if(fightCooldown>0){fightCooldown=Math.max(0,fightCooldown-dt);let fb=document.querySelector('#battleMenu button[data-action="FIGHT"]');fb.textContent=fightCooldown>0?'⚔ FIGHT ('+fightCooldown.toFixed(1)+'s)':'⚔ FIGHT';fb.disabled=fightCooldown>0;}soul.style.opacity=invuln>0&&Math.floor(invuln*18)%2===0?'.25':'1';
-// Safe corner: lower-left remains a reliable dodge spot; attacks must not spawn/track into it.
-const inSafeCorner=(px,py)=>px<=22&&py>=78;
-let interval=[.30,.19,.12,.075][battlePhase-1],speed=[340,480,650,820][battlePhase-1],count=[2,3,4,5][battlePhase-1];attackTimer+=dt;if(attackTimer>Math.max(.09,interval)){attackTimer=0;for(let n=0;n<count;n++){let p=document.createElement('div');p.className='attack';p.style.background=battlePhase>=3?'#ff6cae':'#fff';p.style.boxShadow=battlePhase>=3?'0 0 9px #ff267c':'0 0 7px #fff';let px=Math.random()*88+6;let mode=battlePhase===1?'rain':battlePhase===2?'aim':battlePhase===3?'cross':'inferno';if(mode==='aim'){px=Math.max(25,Math.min(97,x+(Math.random()*28-14)))}if(px<=22)px=24+Math.random()*10;let py=mode==='cross'?(Math.random()*70+5):-14;if(inSafeCorner(px,py))py=70;p.style.left=px+'%';p.style.top=py+'px';arena.appendChild(p);projectiles.push({el:p,x:px,y:py,mode,vx:mode==='cross'?(Math.random()<.5?1:-1)*speed*.85:0,vy:mode==='cross'?(Math.random()*90-45):speed*(battlePhase===4?1.2:1)})}}
-for(let i=projectiles.length-1;i>=0;i--){let p=projectiles[i];p.x+=p.vx*dt/(arena.clientWidth||1)*100;p.y+=p.vy*dt;p.el.style.left=p.x+'%';p.el.style.top=p.y+'px';if(inSafeCorner(p.x,p.y/Math.max(1,arena.clientHeight)*100)){p.el.remove();projectiles.splice(i,1);continue;}let sx=arena.clientWidth*x/100,sy=arena.clientHeight*y/100,px=p.x*arena.clientWidth/100;if(invuln<=0&&Math.abs(px-sx)<(battlePhase===4?22:17)&&Math.abs(p.y-sy)<(battlePhase===4?23:18)){hp=Math.max(0,hp-1);invuln=.45;p.el.remove();projectiles.splice(i,1);document.getElementById('battleText').textContent='TRÚNG ĐÒN! Roser không hề nương tay. HP còn '+hp+'/5';if(hp===0){endBattle('TRÁI TIM VỠ NÁT... Bạn bị đánh bật về lối vào. Hãy quay lại khi đã sẵn sàng.');player.x=7*tile;player.y=7*tile;hp=3;return}}else if(p.y>arena.clientHeight+25||p.x<0||p.x>100){p.el.remove();projectiles.splice(i,1)}}document.getElementById('hp').textContent='HP '+'♥'.repeat(hp)+'♡'.repeat(5-hp)}
+function updateBattle(dt){
+ let soul=document.getElementById('soul'),arena=document.getElementById('arena');
+ let x=parseFloat(soul.style.left)||50,y=parseFloat(soul.style.top)||70;
+ let dx=(keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0);
+ let dy=(keys.s||keys.arrowdown?1:0)-(keys.w||keys.arrowup?1:0);
+ if(dx&&dy){dx*=.707;dy*=.707}
+ let r=145*dt;
+ x=Math.max(3,Math.min(97,x+dx*r));y=Math.max(6,Math.min(94,y+dy*r));
+ soul.style.left=x+'%';soul.style.top=y+'%';phaseClock+=dt;invuln=Math.max(0,invuln-dt);
+ if(fightCooldown>0){
+  fightCooldown=Math.max(0,fightCooldown-dt);
+  let fb=document.querySelector('#battleMenu button[data-action="FIGHT"]');
+  fb.textContent=fightCooldown>0?'⚔ FIGHT ('+fightCooldown.toFixed(1)+'s)':'⚔ FIGHT';fb.disabled=fightCooldown>0;
+ }
+ soul.style.opacity=invuln>0&&Math.floor(invuln*18)%2===0?'.25':'1';
+ // Roser keeps the familiar lower-left safe corner. Projectiles now FALL down through the arena
+ // instead of drifting sideways near the top. Shiki/Leitor remain hard, but a little fairer.
+ const inSafeCorner=(px,py)=>battleType==='roser'&&px<=22&&py>=78;
+ let interval,speed,count;
+ if(battleType==='roser'){
+  interval=[.42,.32,.24,.18][battlePhase-1];
+  speed=[280,350,430,510][battlePhase-1];
+  count=[2,2,3,3][battlePhase-1];
+ }else if(battleType==='shiki'){
+  interval=[.54,.45,.36,.28][battlePhase-1];
+  speed=[230,275,325,385][battlePhase-1];
+  count=[1,2,2,3][battlePhase-1];
+ }else{
+  interval=[.52,.43,.34,.27][battlePhase-1];
+  speed=[235,285,340,400][battlePhase-1];
+  count=[1,2,2,3][battlePhase-1];
+ }
+ attackTimer+=dt;
+ if(attackTimer>Math.max(.12,interval)){
+  attackTimer=0;
+  for(let n=0;n<count;n++){
+   let p=document.createElement('div');p.className='attack';
+   let isShiki=battleType==='shiki';
+   p.style.background=isShiki?'#ff4545':(battlePhase>=3?'#ff6cae':'#fff');
+   p.style.boxShadow=isShiki?'0 0 9px #ff2222':(battlePhase>=3?'0 0 9px #ff267c':'0 0 7px #fff');
+   // A falling pattern: bullets spawn at the upper edge and travel DOWN toward the floor.
+   // Aim only changes the column, never the vertical direction.
+   let px=8+Math.random()*84;
+   if(battlePhase>=2 && n===0) px=Math.max(8,Math.min(92,x+(Math.random()*30-15)));
+   if(battleType==='roser'&&px<=24)px=27+Math.random()*10; // preserve Roser's lower-left dodge route
+   let py=-16;
+   p.style.left=px+'%';p.style.top=py+'px';arena.appendChild(p);
+   projectiles.push({el:p,x:px,y:py,mode:'fall',vx:0,vy:speed*(battlePhase===4?1.03:1)});
+  }
+ }
+ for(let i=projectiles.length-1;i>=0;i--){
+  let p=projectiles[i];p.x+=p.vx*dt/(arena.clientWidth||1)*100;p.y+=p.vy*dt;
+  p.el.style.left=p.x+'%';p.el.style.top=p.y+'px';
+  let pyPct=p.y/Math.max(1,arena.clientHeight)*100;
+  if(inSafeCorner(p.x,pyPct)){p.el.remove();projectiles.splice(i,1);continue;}
+  // Roser's original lower-left safe-corner protection is intentionally retained.
+  if(battleType==='roser'&&p.x<=26&&pyPct>=65){p.el.remove();projectiles.splice(i,1);continue;}
+  let sx=arena.clientWidth*x/100,sy=arena.clientHeight*y/100,px=p.x*arena.clientWidth/100;
+  if(invuln<=0&&Math.abs(px-sx)<(battlePhase===4?22:17)&&Math.abs(p.y-sy)<(battlePhase===4?23:18)){
+   hp=Math.max(0,hp-1);invuln=.45;p.el.remove();projectiles.splice(i,1);
+   let bossLabel=battleType==='shiki'?'Shiki':battleType==='leitor'?'Leitor':'Roser';
+   document.getElementById('battleText').textContent='TRÚNG ĐÒN! '+bossLabel+' tấn công. HP còn '+hp+'/5';
+   if(hp===0){endBattle('TRÁI TIM VỠ NÁT... Bạn bị đánh bật về lối vào. Hãy quay lại khi đã sẵn sàng.');player.x=7*tile;player.y=7*tile;hp=3;return;}
+  }else if(p.y>arena.clientHeight+25||p.x<0||p.x>100){p.el.remove();projectiles.splice(i,1);}
+ }
+ document.getElementById('hp').textContent='HP '+'♥'.repeat(hp)+'♡'.repeat(5-hp);
+}
 let last=performance.now();function loop(now){let dt=Math.min((now-last)/1000,.04);last=now;if(battle)updateBattle(dt);if(started&&!dialogOpen&&!battle){let dx=(keys.d||keys.arrowright?1:0)-(keys.a||keys.arrowleft?1:0),dy=(keys.s||keys.arrowdown?1:0)-(keys.w||keys.arrowup?1:0);if(dx&&dy){dx*=.7071;dy*=.7071}move(dx,dy,dt);if(Math.hypot(player.x-exit.x*tile,player.y-exit.y*tile)<25&&!exitReached){exitReached=true;say('Bạn đã tìm thấy lối ra khỏi hang hoa của Roser! Hành trình VeltaRune mới chỉ bắt đầu...')}}render();requestAnimationFrame(loop)}requestAnimationFrame(loop);
 })();
 </script></body></html>'''
