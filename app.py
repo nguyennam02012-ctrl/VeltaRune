@@ -27,7 +27,16 @@ button{font: bold 16px monospace;padding:13px 28px;background:#ffb6d4;color:#1b1
 #battlePanel{width:min(900px,94vw);color:#fff}
 #battleTop{display:flex;justify-content:space-between;align-items:center;font-size:clamp(16px,2vw,24px);margin-bottom:14px}
 #arena{height:min(48vh,390px);min-height:240px;border:4px solid white;position:relative;background:#080711;overflow:hidden;box-shadow:0 0 0 3px #40324f}
-#battle.hit-flash::after{content:'';position:absolute;inset:0;z-index:20;pointer-events:none;background:rgba(255,35,65,.24);animation:hurtFlash .32s ease-out forwards}#battle.hit-shake #battlePanel{animation:hurtShake .30s ease-out}#battle.hit-shake #arena{box-shadow:0 0 0 3px #ff354f,0 0 22px rgba(255,35,65,.65)}#enemyArt.boss-hurt{animation:bossHurt .42s ease-out;filter:brightness(2.4) saturate(1.8) drop-shadow(0 0 14px #ff284f)}#arena.player-hit{animation:arenaHit .36s ease-out}@keyframes bossHurt{0%,100%{transform:translateX(0);filter:brightness(1)}20%{transform:translateX(-9px);filter:brightness(3) saturate(2)}45%{transform:translateX(8px);filter:brightness(2.5) saturate(2)}70%{transform:translateX(-4px);filter:brightness(1.8)}}@keyframes arenaHit{0%,100%{background:#080711}25%{background:#5b1027}55%{background:#260b1b}}@keyframes hurtFlash{0%{opacity:1}100%{opacity:0}}@keyframes hurtShake{0%,100%{transform:translate(0,0)}20%{transform:translate(-7px,2px)}40%{transform:translate(6px,-2px)}60%{transform:translate(-4px,1px)}80%{transform:translate(3px,0)}}
+#battle{position:absolute}
+#battle.hit-flash::after{content:'';position:absolute;inset:0;z-index:99;pointer-events:none;background:rgba(255,20,55,.48);animation:vrFlash .42s ease-out forwards}
+#battle.hit-shake #battlePanel{animation:vrShake .36s ease-out}
+#battle.hit-shake #arena{box-shadow:0 0 0 4px #ff304f,0 0 28px rgba(255,35,65,.85)}
+#enemyArt.boss-hurt{animation:vrBossHurt .44s ease-out;filter:brightness(3) saturate(2) drop-shadow(0 0 18px #ff234f)}
+#arena.player-hit{animation:vrArenaHit .38s ease-out}
+@keyframes vrFlash{0%{opacity:1}100%{opacity:0}}
+@keyframes vrShake{0%,100%{transform:translate(0,0)}20%{transform:translate(-9px,3px)}40%{transform:translate(8px,-3px)}60%{transform:translate(-6px,2px)}80%{transform:translate(4px,0)}}
+@keyframes vrBossHurt{0%,100%{transform:translateX(0);filter:brightness(1)}20%{transform:translateX(-10px);filter:brightness(3)}45%{transform:translateX(9px);filter:brightness(2.5)}70%{transform:translateX(-5px);filter:brightness(1.8)}}
+@keyframes vrArenaHit{0%,100%{background:#080711}25%{background:#75142b}55%{background:#260b1b}}
 #soul{position:absolute;width:18px;height:18px;background:#ff263f;left:50%;top:70%;transform:translate(-50%,-50%) rotate(45deg);box-shadow:0 0 8px #ff263f;z-index:2}
 #soul:after{content:'';position:absolute;inset:0;background:#ff263f;border-radius:50%;transform:scale(1.25)}
 #soul:before{content:'';position:absolute;inset:0;background:#ff263f;border-radius:50%;transform:scale(1.25);z-index:1}
@@ -78,7 +87,7 @@ const endingMusic=new Audio('data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAAD
 function playMusic(which){const tracks={map:mapMusic,boss:bossMusic,ending:endingMusic};const chosen=tracks[which]||mapMusic;Object.values(tracks).forEach(track=>{if(track!==chosen){track.pause();track.currentTime=0;}});chosen.loop=true;chosen.play().catch(()=>{const hint=document.getElementById('battleHint');if(hint)hint.textContent='Nếu chưa nghe nhạc, hãy chạm/bấm vào game để bật âm thanh.';});}
 function stopMusic(){[mapMusic,bossMusic,endingMusic].forEach(track=>{track.pause();track.currentTime=0;});}
 const canvas=document.getElementById('game'),ctx=canvas.getContext('2d');ctx.imageSmoothingEnabled=false;
-let W=960,H=600,keys={},started=false,dialogOpen=false,dialogIndex=0,flowers=0,hp=5,exitReached=false,battle=false,enemyHP=10000,attackTimer=0,fightCooldown=0,selectedAction=0,attackPhase=false,projectiles=[],battlePhase=1,phaseClock=0,turnCount=0,invuln=0,attackPause=0,battleMessage='Roser chặn đường bạn. Cánh hoa bắt đầu xoay...';
+let W=960,H=600,keys={},started=false,dialogOpen=false,dialogIndex=0,flowers=0,hp=5,exitReached=false,battle=false,enemyHP=10000,attackTimer=0,fightCooldown=0,selectedAction=0,attackPhase=false,projectiles=[],battlePhase=1,phaseClock=0,turnCount=0,invuln=0,battleMessage='Roser chặn đường bạn. Cánh hoa bắt đầu xoay...';
 const tile=32, cols=72, rows=48, worldW=cols*tile,worldH=rows*tile;
 let map=Array.from({length:rows},()=>Array(cols).fill(1));
 // carve winding corridors and chambers
@@ -98,7 +107,7 @@ function solid(px,py){let x=Math.floor(px/tile),y=Math.floor(py/tile);return x<0
 function move(dx,dy,dt){let nx=player.x+dx*player.speed*dt,ny=player.y+dy*player.speed*dt,r=8;if(!solid(nx-r,player.y-r)&&!solid(nx+r,player.y-r)&&!solid(nx-r,player.y+r)&&!solid(nx+r,player.y+r))player.x=nx;if(!solid(player.x-r,ny-r)&&!solid(player.x+r,ny-r)&&!solid(player.x-r,ny+r)&&!solid(player.x+r,ny+r))player.y=ny;if(dx||dy){player.walk+=dt*12;if(Math.abs(dx)>Math.abs(dy))player.face=dx>0?'right':'left';else player.face=dy>0?'down':'up'}}
 function box(x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(Math.round(x),Math.round(y),w,h)}
 function drawFloor(x,y,sx,sy){box(sx,sy,tile,tile,spiderWorld?'#20243a':'#29233b');box(sx+2,sy+2,tile-4,tile-4,spiderWorld?'#292f49':'#322a46');if((x*7+y*11)%9===0)box(sx+8,sy+18,3,3,spiderWorld?'#526d91':'#4a3c59');if((x+y*3)%17===0){box(sx+6,sy+7,3,3,spiderWorld?'#7d91b5':'#55425f');box(sx+22,sy+23,2,2,spiderWorld?'#536b8b':'#49384f')}}
-function drawWall(x,y,sx,sy){box(sx,sy,tile,tile,spiderWorld?'#101321':'#171322');box(sx+2,sy+2,tile-4,tile-4,spiderWorld?'#252a43':'#494052');box(sx+3,sy+3,tile-6,4,spiderWorld?'#414c70':'#67586c');box(sx+4,sy+9,tile-8,2,'#30283d');box(sx+5,sy+14,3,3,spiderWorld?'#8195c2':'#74617a');box(sx+tile-8,sy+20,4,3,'#282235');if(spiderWorld&&(x+y)%4===0){ctx.strokeStyle='#8793b8';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(sx+3,sy+3);ctx.lineTo(sx+tile-3,sy+tile-3);ctx.moveTo(sx+tile-3,sy+3);ctx.lineTo(sx+3,sy+tile-3);ctx.stroke()}if((x*13+y*7)%23===0){box(sx+6,sy+tile-5,5,3,spiderWorld?'#6279a8':'#5f9d83');box(sx+10,sy+tile-8,3,4,spiderWorld?'#879bd0':'#70bd91')}}
+function drawWall(x,y,sx,sy){box(sx,sy,tile,tile,'#171322');box(sx+2,sy+2,tile-4,tile-4,'#494052');box(sx+3,sy+3,tile-6,4,'#67586c');box(sx+4,sy+9,tile-8,2,'#30283d');box(sx+5,sy+14,3,3,'#74617a');box(sx+tile-8,sy+20,4,3,'#282235');if((x*13+y*7)%23===0){box(sx+6,sy+tile-5,5,3,'#5f9d83');box(sx+10,sy+tile-8,3,4,'#70bd91')}}
 function flower(sx,sy){ctx.save();ctx.translate(sx+16,sy+16);ctx.fillStyle='#ff6cae';for(let i=0;i<5;i++){ctx.beginPath();ctx.ellipse(0,-6,4,6,i*Math.PI*2/5,0,Math.PI*2);ctx.fill()}ctx.fillStyle='#ffe6a1';ctx.fillRect(-2,-2,4,4);ctx.restore();box(sx+13,sy+23,6,3,'#4e9c68')}
 function person(sx,sy){ctx.save();ctx.translate(sx+16,sy+16);ctx.scale(1.25,1.25);ctx.translate(-(sx+16),-(sy+16));let bob=Math.sin(player.walk)*2;sy+=bob; // shadow
 box(sx+5,sy+25,22,5,'#171321');
@@ -171,33 +180,55 @@ document.getElementById('mobileInteract').addEventListener('pointerdown',e=>{e.p
 document.getElementById('mobileConfirm').addEventListener('pointerdown',e=>{e.preventDefault();if(battle)battleAction();else if(dialogOpen)interact();else if(!started)document.getElementById('play').click();else interact()});
 function keydown(e){let k=e.key.toLowerCase();if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k))e.preventDefault();keys[k]=true;if(battle){if(['1','2','3','4'].includes(k)){selectedAction=Number(k)-1;highlightAction()}if((k==='e'||k==='enter'||k==='z')&&!e.repeat)battleAction();if(k==='escape'&&!e.repeat){endBattle('Bạn lùi lại khỏi trận chiến. Roser vẫn dõi theo bạn...')}return}if(k==='e'&&started)interact();if(k==='escape'&&dialogOpen){dialogOpen=false;dialog.style.display='none'}}function keyup(e){keys[e.key.toLowerCase()]=false}window.addEventListener('keydown',keydown);window.addEventListener('keyup',keyup);window.addEventListener('blur',()=>keys={});
 document.getElementById('play').onclick=()=>{started=true;document.getElementById('start').style.display='none';playMusic('map');canvas.focus()};
-function buildSpiderWorld(){
-  // Build a separate spider-cave layout instead of reusing Roser's flower cave.
-  map=Array.from({length:rows},()=>Array(cols).fill(1));
-  room(8,8,5,4); room(15,8,4,4); room(26,8,6,5);
-  room(26,19,6,5); room(15,19,5,4); room(8,30,5,5);
-  carve(8,8,15,8,3); carve(15,8,26,8,3); carve(26,8,26,19,3);
-  carve(26,19,15,19,3); carve(15,19,8,30,3);
-  // Make the new cave visually distinct with web-like wall accents handled in drawWall.
-  player.x=8*tile; player.y=8*tile; player.face='right'; player.walk=0;
-  exitReached=false;
-  const hud=document.getElementById('hud');
-  if(hud) hud.innerHTML='✦ VELTARUNE<br>THẾ GIỚI HANG NHỆN<br><span id="hp">HP ♥♥♥♥♥</span><br><span id="flowers">Hoa hồi máu: '+flowers+'</span>';
-  document.title='VeltaRune — Thế giới Hang Nhện';
-}
 function startBattle(){startBossBattle('roser')}
-function clearProjectiles(){for(const p of projectiles){if(p&&p.el&&p.el.parentNode)p.el.remove();}projectiles.length=0;}
-function showDamageEffect(){const b=document.getElementById('battle'),a=document.getElementById('arena');b.classList.remove('hit-flash','hit-shake');a.classList.remove('player-hit');void b.offsetWidth;b.classList.add('hit-flash','hit-shake');a.classList.add('player-hit');setTimeout(()=>{b.classList.remove('hit-flash','hit-shake');a.classList.remove('player-hit')},420);}
-function showBossHurtEffect(){const art=document.getElementById('enemyArt');art.classList.remove('boss-hurt');void art.offsetWidth;art.classList.add('boss-hurt');showDamageEffect();setTimeout(()=>art.classList.remove('boss-hurt'),460);}
-function startBossBattle(type){battleType=type;playMusic('boss');battle=true;fightCooldown=0;document.querySelector('#battleMenu button[data-action=\"FIGHT\"]').textContent='⚔ FIGHT';enemyHP=type==='roser'?10000:type==='leitor'?10000:10000;battlePhase=1;phaseClock=0;turnCount=0;invuln=0;attackTimer=0;attackPause=0;clearProjectiles();attackPhase=false;document.getElementById('battle').style.display='flex';const art=document.getElementById('enemyArt');if(type==='shiki'){art.innerHTML='<img alt=\"Shiki\" src=\"'+SHIKI_IMAGE+'\">';document.getElementById('battleText').textContent='SHIKI: “Hãy cho ta thấy sức mạnh của ngươi!”';}else if(type==='leitor'){art.innerHTML='<span style=\"font-size:70px;color:#f5f5f5\">♜</span>';document.getElementById('battleText').textContent='LEITOR: “Ta sẽ mở đường nếu ngươi chứng minh được sức mạnh. Đánh trúng ta đến khi ta mất một nửa HP!”';}else{art.textContent='🌸';document.getElementById('battleText').textContent='ROSE: “10.000 HP. Không có đường lui đâu.” Né đòn địa ngục bắt đầu! Góc dưới bên trái là vùng né an toàn.';}document.getElementById('soul').style.left='50%';document.getElementById('soul').style.top='70%';updateBossBar();highlightAction()}
-function endBattle(message){battle=false;document.getElementById('battle').style.display='none';clearProjectiles();stopMusic();playMusic('map');if(battleType==='roser'&&enemyHP<=0){startLeitorDialogue();return;}if(battleType==='leitor'&&enemyHP<=5000){leitorTrialPassed=true;spiderWorld=true;leitorStage=2;buildSpiderWorld();document.querySelector('#start .card p').innerHTML='THẾ GIỚI HANG NHỆN<br>Leitor đã công nhận sức mạnh của bạn. Hãy tìm Shiki sâu trong hang...<br><br><b>WASD / phím mũi tên</b> để di chuyển · <b>E</b> để tương tác';say('<b>LEITOR</b><br>“Đủ rồi. Ngươi đã chứng minh mình không yếu đuối. Cánh cổng đến Hang Nhện đã mở. Đi đi… nhưng Shiki sẽ không dễ dàng để ngươi đi qua.”');return;}if(battleType==='shiki'&&enemyHP<=4000){shikiDefeated=true;showShikiFriendChoice();return;}if(message)say(message)}
+function startBossBattle(type){battleType=type;playMusic('boss');battle=true;fightCooldown=0;document.querySelector('#battleMenu button[data-action=\"FIGHT\"]').textContent='⚔ FIGHT';enemyHP=type==='roser'?10000:type==='leitor'?10000:10000;battlePhase=1;phaseClock=0;turnCount=0;invuln=0;attackTimer=0;projectiles=[];attackPhase=false;document.getElementById('battle').style.display='flex';const art=document.getElementById('enemyArt');if(type==='shiki'){art.innerHTML='<img alt=\"Shiki\" src=\"'+SHIKI_IMAGE+'\">';document.getElementById('battleText').textContent='SHIKI: “Hãy cho ta thấy sức mạnh của ngươi!”';}else if(type==='leitor'){art.innerHTML='<span style=\"font-size:70px;color:#f5f5f5\">♜</span>';document.getElementById('battleText').textContent='LEITOR: “Ta sẽ mở đường nếu ngươi chứng minh được sức mạnh. Đánh trúng ta đến khi ta mất một nửa HP!”';}else{art.textContent='🌸';document.getElementById('battleText').textContent='ROSE: “10.000 HP. Không có đường lui đâu.” Né đòn địa ngục bắt đầu! Góc dưới bên trái là vùng né an toàn.';}document.getElementById('soul').style.left='50%';document.getElementById('soul').style.top='70%';updateBossBar();highlightAction()}
+function endBattle(message){battle=false;document.getElementById('battle').style.display='none';projectiles.forEach(p=>p.el.remove());projectiles=[];stopMusic();playMusic('map');if(battleType==='roser'&&enemyHP<=0){startLeitorDialogue();return;}if(battleType==='leitor'&&enemyHP<=5000){leitorTrialPassed=true;spiderWorld=true;leitorStage=2;player.x=8*tile;player.y=8*tile;player.face='down';document.querySelector('#start .card p').innerHTML='THẾ GIỚI HANG NHỆN<br>Leitor đã công nhận sức mạnh của bạn. Hãy tìm Shiki sâu trong hang...<br><br><b>WASD / phím mũi tên</b> để di chuyển · <b>E</b> để tương tác';say('<b>LEITOR</b><br>“Đủ rồi. Ngươi đã chứng minh mình không yếu đuối. Cánh cổng đến Hang Nhện đã mở. Đi đi… nhưng Shiki sẽ không dễ dàng để ngươi đi qua.”');return;}if(battleType==='shiki'&&enemyHP<=4000){shikiDefeated=true;showShikiFriendChoice();return;}if(message)say(message)}
 function showShikiFriendChoice(){dialogOpen=true;dialog.style.display='block';dialog.innerHTML='<b>SHIKI</b><br>“Đủ rồi… ngươi mạnh hơn ta tưởng. Ta thua. Ta không muốn làm kẻ thù của ngươi nữa. Chúng ta có thể làm bạn không?”<div style=\"display:flex;gap:12px;margin-top:16px;flex-wrap:wrap\"><button id=\"shikiYes\">♥ ĐỒNG Ý</button><button id=\"shikiNo\">✕ TỪ CHỐI</button></div>';document.getElementById('shikiYes').onclick=()=>{shikiFriend=true;dialogOpen=false;dialog.style.display='none';say('<b>SHIKI</b><br>“Vậy từ giờ chúng ta là đồng minh! Ta sẽ chỉ cho ngươi những lối đi bí mật trong Hang Nhện.”')};document.getElementById('shikiNo').onclick=()=>{shikiFriend=false;dialogOpen=false;dialog.style.display='none';say('<b>SHIKI</b><br>“Ta hiểu. Ta sẽ không ép ngươi. Nhưng nếu đổi ý, ta vẫn sẽ ở đây.”')}}
 document.getElementById('replay').onclick=()=>location.reload();
 function highlightAction(){document.querySelectorAll('#battleMenu button').forEach((b,i)=>{b.style.background=i===selectedAction?'#ffb34e':'#090914';b.style.color=i===selectedAction?'#090914':'#ffb34e'})}
 function updateBossBar(){let n=battleType==='roser'?'ROSER':battleType==='leitor'?'LEITOR':'SHIKI';document.getElementById('battleHP').textContent=n+' HP '+enemyHP.toLocaleString('en-US')+'/10,000 · PHASE '+battlePhase+'/4'}
-function phaseCheck(){let next=enemyHP<=2500?4:enemyHP<=5000?3:enemyHP<=7500?2:1;if(next!==battlePhase){battlePhase=next;projectiles.forEach(p=>p.el.remove());projectiles=[];phaseClock=0;document.getElementById('battleText').textContent=['','', 'PHASE 2 — THORN RAIN! Đạn nhanh hơn, né ngay!','PHASE 3 — ROSE CYCLONE! Đạn dồn dập từ nhiều hướng!','FINAL PHASE — HEARTBREAK INFERNO! CỰC TỐC. KHÔNG ĐƯỢC ĐỨNG YÊN!'][battlePhase];document.getElementById('enemyArt').textContent=['🌹','🌹','🥀','🌹','🌺'][battlePhase]||'🌹'}}
-function battleAction(){if(!battle)return;let action=['FIGHT','ACT','ITEM','MERCY'][selectedAction];if(action==='FIGHT'){if(fightCooldown>0)return;fightCooldown=2;let fightBtn=document.querySelector('#battleMenu button[data-action="FIGHT"]');fightBtn.disabled=true;fightBtn.textContent='⚔ FIGHT (2.0s)';let damage=650+Math.floor(Math.random()*251);enemyHP=Math.max(0,enemyHP-damage);turnCount++;let bossName=battleType==='roser'?'Roser':battleType==='leitor'?'Leitor':'Shiki';document.getElementById('battleText').textContent='Đòn đánh gây '+damage+' sát thương! '+bossName+' bị choáng bởi đòn đánh!';clearProjectiles();attackPause=.62;attackTimer=0;showBossHurtEffect();updateBossBar();phaseCheck();if((battleType==='roser'&&enemyHP===0)||(battleType==='leitor'&&enemyHP<=5000)||(battleType==='shiki'&&enemyHP<=4000)){endBattle('');return}}else if(action==='ACT'){document.getElementById('battleText').textContent='Bạn đọc nhịp chuyển động của Roser. Tốc độ đạn giảm nhẹ trong 2 giây — tận dụng đi!';attackTimer=-1.2}else if(action==='ITEM'){if(flowers>0&&hp<5){flowers--;hp=Math.min(5,hp+2);document.getElementById('battleText').textContent='Bạn dùng hoa hồi máu: +2 HP. Đừng đứng yên!'}else document.getElementById('battleText').textContent='Không có hoa hồi máu! Bạn phải né bằng kỹ năng.'}else{document.getElementById('battleText').textContent='Roser chưa chịu tha. Hãy sống sót và tiếp tục chiến đấu!';attackPhase=true}attackPhase=true;attackTimer=0;clearProjectiles()}
-document.querySelectorAll('#battleMenu button').forEach((b,i)=>b.addEventListener('click',()=>{selectedAction=i;battleAction()}));
+function clearProjectiles(){
+  // Remove the actual DOM nodes first, then empty the array used by the render/update loop.
+  for(const p of projectiles){if(p&&p.el&&p.el.parentNode)p.el.parentNode.removeChild(p.el);}
+  projectiles.length=0;
+  const arena=document.getElementById('arena');
+  if(arena) arena.querySelectorAll('.attack').forEach(el=>el.remove());
+}
+function showBossHurtEffect(){
+  const battleEl=document.getElementById('battle'), arena=document.getElementById('arena'), art=document.getElementById('enemyArt');
+  if(!battleEl||!arena||!art)return;
+  battleEl.classList.remove('hit-flash','hit-shake');arena.classList.remove('player-hit');art.classList.remove('boss-hurt');
+  void battleEl.offsetWidth;
+  battleEl.classList.add('hit-flash','hit-shake');arena.classList.add('player-hit');art.classList.add('boss-hurt');
+  setTimeout(()=>{battleEl.classList.remove('hit-flash','hit-shake');arena.classList.remove('player-hit');art.classList.remove('boss-hurt');},480);
+}
+function phaseCheck(){let next=enemyHP<=2500?4:enemyHP<=5000?3:enemyHP<=7500?2:1;if(next!==battlePhase){battlePhase=next;clearProjectiles();phaseClock=0;document.getElementById('battleText').textContent=['','', 'PHASE 2 — THORN RAIN! Đạn nhanh hơn, né ngay!','PHASE 3 — ROSE CYCLONE! Đạn dồn dập từ nhiều hướng!','FINAL PHASE — HEARTBREAK INFERNO! CỰC TỐC. KHÔNG ĐƯỢC ĐỨNG YÊN!'][battlePhase];document.getElementById('enemyArt').textContent=['🌹','🌹','🥀','🌹','🌺'][battlePhase]||'🌹'}}
+function battleAction(){
+ if(!battle)return;
+ const action=['FIGHT','ACT','ITEM','MERCY'][selectedAction];
+ if(action==='FIGHT'){
+  if(fightCooldown>0)return;
+  fightCooldown=2;
+  const fightBtn=document.querySelector('#battleMenu button[data-action=\"FIGHT\"]');
+  if(fightBtn){fightBtn.disabled=true;fightBtn.textContent='⚔ FIGHT (2.0s)';}
+  const damage=650+Math.floor(Math.random()*251);
+  enemyHP=Math.max(0,enemyHP-damage);turnCount++;
+  const bossName=battleType==='roser'?'Roser':battleType==='leitor'?'Leitor':'Shiki';
+  document.getElementById('battleText').textContent='Đòn đánh gây '+damage+' sát thương! '+bossName+' bị choáng!';
+  // Critical fix: remove projectile DOM nodes AND reset the same array used by updateBattle.
+  clearProjectiles();attackPause=0.72;attackTimer=0;showBossHurtEffect();
+  updateBossBar();phaseCheck();
+  if((battleType==='roser'&&enemyHP===0)||(battleType==='leitor'&&enemyHP<=5000)||(battleType==='shiki'&&enemyHP<=4000)){endBattle('');return;}
+ }else if(action==='ACT'){
+  document.getElementById('battleText').textContent='Bạn đọc nhịp chuyển động của đối thủ. Tốc độ đạn giảm nhẹ trong 2 giây — tận dụng đi!';attackTimer=-1.2;
+ }else if(action==='ITEM'){
+  if(flowers>0&&hp<5){flowers--;hp=Math.min(5,hp+2);document.getElementById('battleText').textContent='Bạn dùng hoa hồi máu: +2 HP. Đừng đứng yên!';}
+  else document.getElementById('battleText').textContent='Không có hoa hồi máu! Bạn phải né bằng kỹ năng.';
+ }else{
+  document.getElementById('battleText').textContent='Đối thủ chưa chịu thua. Hãy sống sót và tiếp tục chiến đấu!';attackPhase=true;
+ }
+ attackPhase=true;attackTimer=0;
+}
 function updateBattle(dt){
  let soul=document.getElementById('soul'),arena=document.getElementById('arena');
  let x=parseFloat(soul.style.left)||50,y=parseFloat(soul.style.top)||70;
@@ -230,8 +261,8 @@ function updateBattle(dt){
   speed=[235,285,340,400][battlePhase-1];
   count=[1,2,2,3][battlePhase-1];
  }
- if(attackPause>0){attackPause=Math.max(0,attackPause-dt);attackTimer=0;}else{attackTimer+=dt;}
- if(attackPause<=0&&attackTimer>Math.max(.12,interval)){
+ attackTimer+=dt;
+ if(attackTimer>Math.max(.12,interval)){
   attackTimer=0;
   for(let n=0;n<count;n++){
    let p=document.createElement('div');p.className='attack';
@@ -257,7 +288,7 @@ function updateBattle(dt){
   if(battleType==='roser'&&p.x<=26&&pyPct>=65){p.el.remove();projectiles.splice(i,1);continue;}
   let sx=arena.clientWidth*x/100,sy=arena.clientHeight*y/100,px=p.x*arena.clientWidth/100;
   if(invuln<=0&&Math.abs(px-sx)<(battlePhase===4?22:17)&&Math.abs(p.y-sy)<(battlePhase===4?23:18)){
-   hp=Math.max(0,hp-1);invuln=.75;p.el.remove();projectiles.splice(i,1);showDamageEffect();
+   hp=Math.max(0,hp-1);invuln=.45;p.el.remove();projectiles.splice(i,1);
    let bossLabel=battleType==='shiki'?'Shiki':battleType==='leitor'?'Leitor':'Roser';
    document.getElementById('battleText').textContent='TRÚNG ĐÒN! '+bossLabel+' tấn công. HP còn '+hp+'/5';
    if(hp===0){endBattle('TRÁI TIM VỠ NÁT... Bạn bị đánh bật về lối vào. Hãy quay lại khi đã sẵn sàng.');player.x=7*tile;player.y=7*tile;hp=3;return;}
