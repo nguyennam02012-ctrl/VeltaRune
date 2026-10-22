@@ -108,11 +108,16 @@ function playMusic(which){
  });
  chosen.loop=true;chosen.muted=false;chosen.volume=which==='map'?0.62:0.78;
  const hint=document.getElementById('battleHint');
- const p=chosen.play();
- if(p&&p.then)p.then(()=>{if(hint)hint.textContent='♫ Đang phát nhạc: '+which.toUpperCase();}).catch(err=>{
-   console.warn('VeltaRune audio playback failed:',which,err);
-   if(hint)hint.textContent='Lỗi tải nhạc '+which+'. Đang thử phát lại…';
- });
+ try{
+   const p=chosen.play();
+   if(p&&p.then)p.then(()=>{if(hint)hint.textContent='♫ '+which.toUpperCase();}).catch(err=>{
+     console.warn('VeltaRune audio playback failed:',which,err);
+     if(hint)hint.textContent='Không phát được nhạc '+which+'.';
+   });
+ }catch(err){
+   console.warn('VeltaRune audio error:',which,err);
+   if(hint)hint.textContent='Lỗi âm thanh '+which+'.';
+ }
 }
 function stopMusic(){Object.values(musicTracks).forEach(track=>{track.pause();try{track.currentTime=0}catch(e){}})}
 const canvas=document.getElementById('game'),ctx=canvas.getContext('2d');ctx.imageSmoothingEnabled=false;
@@ -196,7 +201,7 @@ const dialog=document.getElementById('dialog');const lines=[];
 let leitorDialogue=null, dialogueTyping=false, dialogueIndex=0, dialogueTimer=null, dialogueText='', dialogueStartedAt=0, shikiIntroOpen=false;
 function say(text){dialog.innerHTML=text+'<small>Nhấn E để tiếp tục</small>';dialog.style.display='block';dialogOpen=true}
 function showTypedLine(){if(!leitorDialogue)return;const line=leitorDialogue[dialogueIndex];dialogueText=line;dialogueStartedAt=performance.now();dialogueTyping=true;dialog.innerHTML='<span id="typedLine"></span><small id="dialogHint">Đang nói…</small>';let out=dialog.querySelector('#typedLine'),i=0;clearInterval(dialogueTimer);dialogueTimer=setInterval(()=>{if(!out||!dialogueTyping){clearInterval(dialogueTimer);return;}i++;out.innerHTML=line.slice(0,i);if(i>=line.length){clearInterval(dialogueTimer);dialogueTyping=false;const hint=dialog.querySelector('#dialogHint');if(hint)hint.textContent='Nhấn E để tiếp tục';}},28)}
-function startLeitorDialogue(){if(leitorTrialPassed||spiderWorld)return;roserDefeated=true;spiderWorld=false;leitor.x=Math.max(2,Math.min(cols-3,Math.round(player.x/tile)+2));leitor.y=Math.max(2,Math.min(rows-3,Math.round(player.y/tile)));leitorStage=1;leitorDialogue=[
+function startLeitorDialogue(){if(leitorTrialPassed||spiderWorld||battleType==='shiki')return;roserDefeated=true;spiderWorld=false;leitor.x=Math.max(2,Math.min(cols-3,Math.round(player.x/tile)+2));leitor.y=Math.max(2,Math.min(rows-3,Math.round(player.y/tile)));leitorStage=1;leitorDialogue=[
 '<b>LEITOR</b><br>“Cuối cùng thì… ngươi cũng đã vượt qua Roser.”',
 '<b>LEITOR</b><br>“Đừng nhìn ta như vậy. Ta đã quan sát trận chiến từ rất lâu rồi.”',
 '<b>BẠN</b><br>“Ngươi là ai? Tại sao lại xuất hiện ở đây?”',
@@ -214,9 +219,46 @@ function startLeitorDialogue(){if(leitorTrialPassed||spiderWorld)return;roserDef
 '<b>LEITOR</b><br>“Khi ngươi sẵn sàng, nhấn E. Ta sẽ đưa ngươi đến Hang Nhện.”'
 ];dialogueIndex=0;dialogOpen=true;dialog.style.display='block';showTypedLine()}
 function advanceLeitorDialogue(){if(!leitorDialogue)return;if(dialogueTyping){clearInterval(dialogueTimer);dialogueTyping=false;const out=dialog.querySelector('#typedLine');if(out)out.innerHTML=dialogueText;const hint=dialog.querySelector('#dialogHint');if(hint)hint.textContent='Nhấn E để tiếp tục';return;}if(performance.now()-dialogueStartedAt<650)return;dialogueIndex++;if(dialogueIndex<leitorDialogue.length){showTypedLine();return;}clearInterval(dialogueTimer);leitorDialogue=null;dialogOpen=false;dialog.style.display='none';startBossBattle('leitor')}
-function interact(){if(battle){battleAction();return}if(dialogOpen){if(leitorDialogue){advanceLeitorDialogue();return;}dialog.style.display='none';dialogOpen=false;if(shikiIntroOpen){shikiIntroOpen=false;startBossBattle('shiki');}return}let tx=Math.round(player.x/tile),ty=Math.round(player.y/tile);let near=(x,y)=>Math.hypot(tx-x,ty-y)<2.2;
-if(!spiderWorld&&!leitorTrialPassed&&leitorStage===1&&roserDefeated&&near(leitor.x,leitor.y)){startLeitorDialogue();return;}if(spiderWorld&&shikiDefeated!==true&&near(15,8)){if(shikiDefeated!=='challenged'){shikiIntroOpen=true;shikiDefeated='challenged';say('<b>SHIKI</b><br>“Ngươi đã đi sâu vào lãnh địa của ta. Muốn đi tiếp? Hãy chứng minh sức mạnh của mình!”');}else{shikiIntroOpen=false;startBossBattle('shiki');}return;}
-let f=flowersPos.find(f=>!f.got&&near(f.x,f.y));if(f){f.got=true;flowers++;hp=Math.min(5,hp+1);say('Bạn hái được một <span style="color:#ff8fc0">bông hoa hồi máu</span>. Cánh hoa ấm lên trong tay bạn.');return}let c=chests.find(c=>!c.open&&near(c.x,c.y));if(c){c.open=true;say('Trong rương có một <span style="color:#ffe08a">Cổ Ấn Velta</span>. Nó khẽ phát sáng...');return}if(near(roser.x,roser.y)){startBattle();return}if(near(exit.x,exit.y)){say('Cánh cửa đá rung lên. Cổ Ấn Velta có thể mở nó...');return}say('Hang động im lặng. Những cánh hoa phát sáng mờ mờ trong bóng tối.')}
+function interact(){
+ if(battle){battleAction();return;}
+ if(dialogOpen){
+   if(leitorDialogue){advanceLeitorDialogue();return;}
+   dialog.style.display='none';dialogOpen=false;
+   if(shikiIntroOpen){shikiIntroOpen=false;startBossBattle('shiki');}
+   return;
+ }
+ let tx=Math.round(player.x/tile),ty=Math.round(player.y/tile);
+ let near=(x,y)=>Math.hypot(tx-x,ty-y)<2.2;
+
+ // Spider World is isolated from all earlier-world interactions.
+ if(spiderWorld){
+   if(shikiDefeated===true){say('<b>SHIKI</b><br>“Chúng ta đã là bạn. Hãy cùng khám phá nơi này.”');return;}
+   if(near(15,8)){
+     shikiIntroOpen=false;
+     shikiDefeated='challenged';
+     startBossBattle('shiki');
+     return;
+   }
+   let sf=flowersPos.find(f=>!f.got&&near(f.x,f.y));
+   if(sf){sf.got=true;flowers++;hp=Math.min(5,hp+1);say('Bạn hái được một <span style="color:#ff8fc0">bông hoa hồi máu</span>.');return;}
+   let sc=chests.find(c=>!c.open&&near(c.x,c.y));
+   if(sc){sc.open=true;say('Trong rương có một <span style="color:#ffe08a">Cổ Ấn Velta</span>.');return;}
+   if(near(exit.x,exit.y)){say('Cánh cửa đá rung lên.');return;}
+   say('Hang Nhện im lặng. Tiếng tơ rung lên trong bóng tối.');
+   return;
+ }
+
+ if(!leitorTrialPassed&&leitorStage===1&&roserDefeated&&near(leitor.x,leitor.y)){
+   startLeitorDialogue();return;
+ }
+ let f=flowersPos.find(f=>!f.got&&near(f.x,f.y));
+ if(f){f.got=true;flowers++;hp=Math.min(5,hp+1);say('Bạn hái được một <span style="color:#ff8fc0">bông hoa hồi máu</span>. Cánh hoa ấm lên trong tay bạn.');return;}
+ let c=chests.find(c=>!c.open&&near(c.x,c.y));
+ if(c){c.open=true;say('Trong rương có một <span style="color:#ffe08a">Cổ Ấn Velta</span>. Nó khẽ phát sáng...');return;}
+ if(!roserDefeated&&near(roser.x,roser.y)){startBattle();return;}
+ if(near(exit.x,exit.y)){say('Cánh cửa đá rung lên. Cổ Ấn Velta có thể mở nó...');return;}
+ say('Hang động im lặng. Những cánh hoa phát sáng mờ mờ trong bóng tối.');
+}
 // Mobile touch controls: hold direction buttons to move; action buttons interact/confirm.
 document.querySelectorAll('#mobileControls [data-key]').forEach(btn=>{
  const k=btn.dataset.key;
