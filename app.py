@@ -94,15 +94,27 @@ const endingMusic=new Audio('data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAAD
 const leitorMusic=new Audio('data:audio/mpeg;base64,__HEARTACHE_AUDIO__');leitorMusic.volume=0.78;
 const shikiMusic=new Audio('data:audio/mpeg;base64,__MEGALOVANIA_AUDIO__');shikiMusic.volume=0.78;
 const musicTracks={map:mapMusic,boss:bossMusic,ending:endingMusic,leitor:leitorMusic,shiki:shikiMusic};
+Object.entries(musicTracks).forEach(([name,track])=>{track.addEventListener('error',()=>console.error('VeltaRune: audio load error for',name,track.error));track.preload='auto';});
 let audioUnlocked=false;
 function unlockGameAudio(){
- if(audioUnlocked)return; audioUnlocked=true;
- // Unlock each HTMLAudioElement during the user's first click, so delayed battle intros can switch tracks.
- Object.values(musicTracks).forEach(track=>{const oldMuted=track.muted;track.muted=true;track.volume=0;const p=track.play();if(p&&p.then)p.then(()=>{track.pause();try{track.currentTime=0}catch(e){}track.muted=oldMuted;track.volume=track===mapMusic?0.62:0.78;}).catch(()=>{audioUnlocked=false;track.muted=oldMuted;});});
+ // IMPORTANT: Do not play/pause every track here. Pending play() promises can
+ // resolve after the map starts and pause the newly selected track (old bug).
+ audioUnlocked=true;
 }
-function playMusic(which){const chosen=musicTracks[which]||mapMusic;Object.values(musicTracks).forEach(track=>{if(track!==chosen){track.pause();try{track.currentTime=0}catch(e){}}});chosen.loop=true;chosen.muted=false;chosen.volume=which==='map'?0.62:0.78;const p=chosen.play();if(p&&p.catch)p.catch(()=>{const hint=document.getElementById('battleHint');if(hint)hint.textContent='Âm thanh bị trình duyệt chặn. Nhấn nút 🔊 BẬT ÂM THANH rồi thử lại.';});}
+function playMusic(which){
+ const chosen=musicTracks[which]||mapMusic;
+ Object.values(musicTracks).forEach(track=>{
+   if(track!==chosen){track.pause();try{track.currentTime=0}catch(e){}}
+ });
+ chosen.loop=true;chosen.muted=false;chosen.volume=which==='map'?0.62:0.78;
+ const hint=document.getElementById('battleHint');
+ const p=chosen.play();
+ if(p&&p.then)p.then(()=>{if(hint)hint.textContent='♫ Đang phát nhạc: '+which.toUpperCase();}).catch(err=>{
+   console.warn('VeltaRune audio playback failed:',which,err);
+   if(hint)hint.textContent='Không phát được nhạc '+which+'. Hãy bấm BẬT ÂM THANH rồi thử lại.';
+ });
+}
 function stopMusic(){Object.values(musicTracks).forEach(track=>{track.pause();try{track.currentTime=0}catch(e){}})}
-function stopMusic(){[mapMusic,bossMusic,endingMusic,leitorMusic,shikiMusic].forEach(track=>{track.pause();track.currentTime=0;});}
 const canvas=document.getElementById('game'),ctx=canvas.getContext('2d');ctx.imageSmoothingEnabled=false;
 let W=960,H=600,keys={},started=false,dialogOpen=false,dialogIndex=0,flowers=0,hp=5,exitReached=false,battle=false,enemyHP=10000,attackTimer=0,fightCooldown=0,selectedAction=0,attackPhase=false,projectiles=[],battlePhase=1,phaseClock=0,turnCount=0,invuln=0,battleMessage='Roser chặn đường bạn. Cánh hoa bắt đầu xoay...';
 const tile=32, cols=72, rows=48, worldW=cols*tile,worldH=rows*tile;
